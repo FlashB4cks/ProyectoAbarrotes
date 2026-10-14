@@ -1,0 +1,187 @@
+================================================================================
+          CONTEXTO GENERAL DEL PROYECTO, GIRO DEL NEGOCIO Y 
+              RELACIÓN DE TABLAS DE LA BASE DE DATOS
+                          «NOHEMYSYS»
+================================================================================
+Fecha de Emisión: 09 de Agosto de 2026
+Sistema: NohemySys — Sistema Web de Gestión Comercial y Control de Inventarios FIFO
+Proyecto: Proyecto de Graduación
+Institución: Universidad Mariano Gálvez de Guatemala (UMG)
+Facultad: Ingeniería en Sistemas de Información y Ciencias de la Computación
+================================================================================
+
+
+1. CONTEXTO GENERAL DEL PROYECTO
+--------------------------------------------------------------------------------
+NohemySys es una plataforma web integral diseñada para la automatización,
+gestión comercial, control de existencias bajo la metodología PEPS/FIFO y punto 
+de venta (POS) para abarroterías y depósitos minoristas.
+
+El desarrollo está fundamentado en una arquitectura decoupled y modular:
+
+• BACKEND API REST:
+  - Lenguaje y Framework: Python 3.12 + Django 6.0 REST Framework.
+  - Autenticación Segura: JWT (JSON Web Tokens) con SimpleJWT.
+  - Gestión de Sesiones: Access Token (corta duración) y Refresh Token automático.
+  - Seguridad de Accesos: Primer ingreso detectado que exige cambio de contraseña
+    temporal mediante reglas de seguridad estrictas (mínimo 8 caracteres, combinación
+    de mayúsculas/minúsculas/números, prohibición de secuencias puramente numéricas
+    o similitud con nombres/usuario).
+  - Borrado Lógico (Soft Delete): Campo `is_active` en todos los modelos para
+    preservar la trazabilidad de auditoría histórica sin eliminar datos.
+
+• BASE DE DATOS RELACIONAL:
+  - Motor: PostgreSQL 18 local (Servicio `postgresql-x64-18`, base `nohemysys_db`).
+  - Normalización: Tercera Forma Normal (3NF) garantizando la eliminación de
+    redundancias e inconsistencias de datos.
+
+• FRONTEND SPA (SINGLE PAGE APPLICATION):
+  - Tecnologías: HTML5, CSS Vanilla de alta gama (Dark Gold Theme), JavaScript (ES6+),
+    React 18 y Babel Standalone para compilación e integración fluida en cliente.
+  - Diseño: Dashboard responsivo, tabla de 5 columnas esenciales, barra lateral 
+    contraíble (72px a 250px) con navegación directa por ícono vectorial de silueta 
+    de usuarios y ventanas modales flotantes centradas sobre backdrop desenfocado.
+
+
+2. GIRO DEL NEGOCIO
+--------------------------------------------------------------------------------
+• Sector Comercial: Venta al detalle y por mayor de productos de consumo masivo, 
+  abarrotes generales, víveres, bebidas, artículos de limpieza y perecederos.
+
+• Problema Operativo que Resuelve:
+  - Eliminación del desperdicio y mermas económicas causadas por la caducidad 
+    de mercancías almacenadas.
+  - Agilización del cobro al cliente en el Punto de Venta (POS), reduciendo colas 
+    y errores humanos en el cálculo del total y cambio.
+  - Control riguroso del inventario en tiempo real mediante trazabilidad por lotes 
+    y fechas de vencimiento (PEPS / FIFO: Primeras Entradas, Primeras Salidas).
+  - Administración de personal con segregación estricta de responsabilidades según 
+    tres roles operativos:
+      1. ADMINISTRADOR: Acceso total al sistema, creación de personal, asignación de 
+         roles, consulta de bitácoras y configuraciones comerciales.
+      2. VENDEDOR: Operación del Punto de Venta (POS), emisión de facturas y cobros.
+      3. ALMACENERO: Recepción de mercadería de proveedores, registro de compras y 
+         creación de lotes de inventario.
+
+
+3. ESTRUCTURA Y RELACIÓN ENTRE LAS TABLAS (MODELO ENTIDAD-RELACIÓN 3NF)
+--------------------------------------------------------------------------------
+
+A. TABLA `usuarios` (Autenticación y Empleados)
+   - Descripción: Almacena los datos de inicio de sesión y la ficha del empleado.
+   - Atributos Clave: id (PK), username, email, first_name, last_name, rol (Enum:
+     ADMINISTRADOR, VENDEDOR, ALMACENERO), dpi (13 dígitos, Único), nit, telefono, 
+     direccion, is_active (Soft Delete), debe_cambiar_password (Boolean), date_joined.
+   - Relaciones:
+     * 1 a N con `ventas`: Un usuario vendedor procesa muchas ventas.
+     * 1 a N con `compras`: Un usuario almacenero/admin registra muchas compras.
+     * 1 a N con `bitacora_auditoria`: Un usuario genera múltiples registros.
+
+B. TABLA `categorias` (Clasificación de Mercancía)
+   - Descripción: Familias de productos (Ej. Granos Básicos, Lácteos, Bebidas).
+   - Atributos Clave: id_categoria (PK), nombre, descripcion, is_active.
+   - Relaciones:
+     * 1 a N con `productos`: Una categoría agrupa múltiples productos.
+
+C. TABLA `proveedores` (Suministradores)
+   - Descripción: Empresas proveedoras que abastecen al comercio.
+   - Atributos Clave: id_proveedor (PK), nombre_empresa, contacto, telefono, email, nit, direccion, is_active.
+   - Relaciones:
+     * 1 a N con `compras`: Un proveedor abastece muchas órdenes de compra.
+     * 1 a N con `productos`: Un proveedor suministra varios productos.
+
+D. TABLA `productos` (Catálogo Comercial)
+   - Descripción: Maestro de artículos disponibles para la venta.
+   - Atributos Clave: id_producto (PK), codigo_barras (Único), nombre, descripcion,
+     id_categoria (FK), id_proveedor (FK), precio_venta, stock_total, stock_minimo, is_active.
+   - Relaciones:
+     * N a 1 con `categorias`: Pertenece a una categoría específica.
+     * N a 1 con `proveedores`: Suministrado por un proveedor principal.
+     * 1 a N con `lotes_inventario`: Se divide en lotes físicos según fecha de ingreso.
+     * 1 a N con `detalle_ventas`: Presente en múltiples líneas de detalle de venta.
+     * 1 a N con `detalle_compras`: Presente en múltiples líneas de detalle de compra.
+
+E. TABLA `lotes_inventario` (Motor Algorítmico FIFO)
+   - Descripción: Control físico por lote, vencimiento y costo unitario.
+   - Atributos Clave: id_lote (PK), id_producto (FK), id_compra (FK), numero_lote,
+     fecha_ingreso, fecha_vencimiento, cantidad_inicial, cantidad_actual, costo_unitario, is_active.
+   - Relaciones:
+     * N a 1 con `productos`: Asociado a un producto del catálogo.
+     * N a 1 con `compras`: Originado en una recepción de mercadería.
+     * 1 a N con `salidas_lote_venta`: Vincula qué lote exacto descontó cada venta.
+
+F. TABLA `clientes` (Directorio de Compradores)
+   - Descripción: Clientes finales o mayoristas.
+   - Atributos Clave: id_cliente (PK), nombre_completo, nit (CF o NIT válido), dpi, telefono, direccion, is_active.
+   - Relaciones:
+     * 1 a N con `ventas`: Un cliente realiza múltiples transacciones de compra.
+
+G. TABLA `ventas` (Encabezado Transaccional POS)
+   - Descripción: Registro general de facturación y cobro.
+   - Atributos Clave: id_venta (PK), codigo_factura (Único), fecha_hora, id_usuario_vendedor (FK),
+     id_cliente (FK), subtotal, descuento, total, metodo_pago, monto_recibido, cambio_entregado, estado.
+   - Relaciones:
+     * N a 1 con `usuarios`: Operado por un cajero/vendedor.
+     * N a 1 con `clientes`: Asociado al comprador.
+     * 1 a N con `detalle_ventas`: Contiene los artículos comprados.
+
+H. TABLA `detalle_ventas` (Líneas de Factura)
+   - Descripción: Desglose por producto dentro de la venta.
+   - Atributos Clave: id_detalle_venta (PK), id_venta (FK), id_producto (FK), cantidad, precio_unitario, subtotal.
+   - Relaciones:
+     * N a 1 con `ventas`.
+     * N a 1 con `productos`.
+
+I. TABLA `compras` (Encabezado Recepción de Mercadería)
+   - Descripción: Orden de ingreso de mercancía de proveedores.
+   - Atributos Clave: id_compra (PK), numero_comprobante, fecha_compra, id_proveedor (FK), id_usuario_registra (FK), total_compra, estado.
+   - Relaciones:
+     * N a 1 con `proveedores`.
+     * N a 1 con `usuarios`.
+     * 1 a N con `detalle_compras`.
+     * 1 a N con `lotes_inventario`.
+
+J. TABLA `detalle_compras` (Líneas de Orden de Compra)
+   - Descripción: Desglose por producto ingresado al almacén.
+   - Atributos Clave: id_detalle_compra (PK), id_compra (FK), id_producto (FK), cantidad, costo_unitario, subtotal.
+   - Relaciones:
+     * N a 1 con `compras`.
+     * N a 1 con `productos`.
+
+K. TABLA `bitacora_auditoria` (Seguridad y Trazabilidad)
+   - Descripción: Registro inmutable de actividad de usuarios.
+   - Atributos Clave: id_log (PK), id_usuario (FK), accion, tabla_afectada, descripcion, fecha_hora, ip_origen.
+   - Relaciones:
+     * N a 1 con `usuarios`.
+
+
+4. DIAGRAMA TEXTUAL DE CARDINALIDAD Y FLUJO DE DATOS
+--------------------------------------------------------------------------------
+
+ [proveedores] (1) ------ (N) [compras] (1) ------ (N) [lotes_inventario]
+       |                         |                           |
+       |                         |                           | (Descuento PEPS/FIFO)
+       v                         v                           v
+ [productos]   <------- [detalle_compras]         [salidas_lote_venta]
+       |                         |                           ^
+       | (1)                     |                           |
+       +--------------> (N) [detalle_ventas] (N) <-----------+
+                                 |
+                                 v (N)
+  [usuarios] (1) ------------> [ventas] (N) <-------- (1) [clientes]
+      |
+      +--------------> (N) [bitacora_auditoria]
+
+
+5. REGLAS DE NEGOCIO Y OPERACIÓN DEL SISTEMA
+--------------------------------------------------------------------------------
+1. ROTACIÓN FIFO OBLIGATORIA: Al registrar una venta en el POS, el sistema descuenta
+   las unidades del lote activo con la fecha de vencimiento más antigua (`fecha_vencimiento` ascendente).
+2. GENERACIÓN AUTOMÁTICA DE USUARIOS Y CLAVES: Al registrar un nuevo empleado, 
+   el sistema genera un nombre de usuario basado en inicial del nombre + apellidos 
+   y asigna una contraseña temporal aleatoria de 12 caracteres.
+3. CAMBIO OBLIGATORIO DE CONTRASEÑA: En el primer login del empleado, la plataforma 
+   bloquea las funciones y exige actualizar la clave por una propia bajo validación estricta.
+4. BORRADO LÓGICO INTEGRAL: Ningún registro operativo se elimina físicamente de PostgreSQL. 
+   La inhabilitación se ejecuta cambiando `is_active = False` para proteger el historial financiero.
+================================================================================

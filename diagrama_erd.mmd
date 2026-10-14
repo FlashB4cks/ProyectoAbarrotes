@@ -1,0 +1,179 @@
+erDiagram
+    DEPARTAMENTOS ||--|{ MUNICIPIOS : "contiene"
+    MUNICIPIOS ||--|{ DIRECCIONES : "ubica"
+    DIRECCIONES ||--o| CLIENTES : "residencia"
+    DIRECCIONES ||--o| PROVEEDORES : "sede"
+
+    ROLES ||--|{ USUARIOS : "asigna"
+    
+    CATEGORIAS ||--|{ PRODUCTOS : "clasifica"
+    UNIDADES_MEDIDA ||--|{ PRODUCTOS : "mide"
+    
+    PRODUCTOS ||--|{ LOTES : "abastece"
+    PROVEEDORES ||--|{ LOTES : "surtido"
+    PROVEEDORES ||--|{ COMPRAS : "provee"
+    USUARIOS ||--|{ COMPRAS : "registra"
+    
+    COMPRAS ||--|{ DETALLES_COMPRA : "contiene"
+    LOTES ||--|{ DETALLES_COMPRA : "ingresa"
+
+    CLIENTES ||--o{ VENTAS : "solicita"
+    USUARIOS ||--|{ VENTAS : "emite"
+
+    VENTAS ||--|{ DETALLES_VENTA : "contiene"
+    PRODUCTOS ||--|{ DETALLES_VENTA : "corresponde"
+    LOTES ||--|{ DETALLES_VENTA : "deduce_FIFO"
+
+    VENTAS ||--o| MOVIMIENTOS_FINANCIEROS : "ingreso"
+    USUARIOS ||--|{ MOVIMIENTOS_FINANCIEROS : "autoriza"
+    COMPRAS ||--o| MOVIMIENTOS_FINANCIEROS : "egreso"
+
+    DEPARTAMENTOS {
+        int id PK
+        string nombre
+    }
+
+    MUNICIPIOS {
+        int id PK
+        int departamento_id FK
+        string nombre
+    }
+
+    DIRECCIONES {
+        int id PK
+        int municipio_id FK
+        string linea1
+        string referencia
+    }
+
+    ROLES {
+        int id PK
+        string nombre
+        string descripcion
+    }
+
+    USUARIOS {
+        int id PK
+        int rol_id FK
+        string nombre
+        string apellido
+        string username
+        string email
+        string dpi
+        string nit
+        string telefono
+        string direccion
+        boolean is_active
+        timestamp fecha_registro
+    }
+
+    CLIENTES {
+        int id PK
+        int direccion_id FK
+        string nombre
+        string apellido
+        string nit
+        string telefono
+        string email
+        boolean activo
+    }
+
+    PROVEEDORES {
+        int id PK
+        int direccion_id FK
+        string nombre_empresa
+        string nit
+        string contacto_nombre
+        string telefono
+        string email
+        boolean activo
+    }
+
+    CATEGORIAS {
+        int id PK
+        string nombre
+        string descripcion
+        boolean activo
+    }
+
+    UNIDADES_MEDIDA {
+        int id PK
+        string nombre
+        string simbolo
+        boolean activo
+    }
+
+    PRODUCTOS {
+        int id PK
+        int categoria_id FK
+        int unidad_medida_id FK
+        string codigo_barras
+        string nombre
+        string descripcion
+        decimal precio_venta
+        int stock_minimo
+        boolean activo
+    }
+
+    LOTES {
+        int id PK
+        int producto_id FK
+        int proveedor_id FK
+        string numero_lote
+        int cantidad_inicial
+        int cantidad_actual
+        decimal precio_costo_unitario
+        date fecha_ingreso
+        date fecha_vencimiento
+        string estado
+    }
+
+    COMPRAS {
+        int id PK
+        int proveedor_id FK
+        int usuario_id FK
+        timestamp fecha_compra
+        decimal total
+        string estado
+    }
+
+    DETALLES_COMPRA {
+        int id PK
+        int compra_id FK
+        int lote_id FK
+        int cantidad
+        decimal precio_costo_unitario
+        decimal subtotal
+    }
+
+    VENTAS {
+        int id PK
+        int cliente_id FK
+        int usuario_id FK
+        timestamp fecha_venta
+        decimal total
+        string metodo_pago
+        string comprobante_numero
+        string estado
+    }
+
+    DETALLES_VENTA {
+        int id PK
+        int venta_id FK
+        int producto_id FK
+        int lote_id FK
+        int cantidad
+        decimal precio_venta_unitario
+        decimal subtotal
+    }
+
+    MOVIMIENTOS_FINANCIEROS {
+        int id PK
+        int usuario_id FK
+        int venta_id FK
+        int compra_id FK
+        string tipo
+        decimal monto
+        string concepto
+        timestamp fecha
+    }

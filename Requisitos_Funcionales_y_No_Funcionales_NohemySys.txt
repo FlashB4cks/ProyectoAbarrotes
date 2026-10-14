@@ -1,0 +1,143 @@
+================================================================================
+           ESPECIFICACIÓN DE REQUISITOS FUNCIONALES Y NO FUNCIONALES
+                         SISTEMA WEB «NOHEMYSYS»
+         (REQUISITOS NO FUNCIONALES ORDENADOS POR PRIORIDAD TÉCNICA)
+================================================================================
+Fecha: 09 de Agosto de 2026
+Proyecto: Sistema Web de Gestión Comercial, Control de Inventarios PEPS/FIFO y POS
+Institución: Universidad Mariano Gálvez de Guatemala (UMG)
+================================================================================
+
+1. REQUISITOS FUNCIONALES (RF)
+--------------------------------------------------------------------------------
+
+[ RF-01: AUTENTICACIÓN Y GESTIÓN DE SESIONES (JWT) ]
+  • RF-01.1: El sistema debe permitir el inicio de sesión mediante Nombre de 
+    Usuario o Correo Electrónico indistintamente.
+  • RF-01.2: El sistema debe generar tokens de autenticación JSON Web Token (JWT) 
+    compuestos por Access Token (acceso) y Refresh Token (renovación).
+  • RF-01.3: El sistema debe refrescar automáticamente el token de acceso en 
+    segundo plano sin interrumpir la navegación activa del usuario.
+
+[ RF-02: CAMBIO OBLIGATORIO DE CONTRASEÑA EN PRIMER INGRESO ]
+  • RF-02.1: El sistema debe detectar automáticamente cuando un usuario ingresa 
+    por primera vez utilizando su contraseña temporal autogenerada.
+  • RF-02.2: El sistema debe bloquear el acceso a los módulos operativos y presentar 
+    obligatoriamente una ventana modal para el cambio de contraseña.
+  • RF-02.3: El sistema debe validar que la nueva contraseña cumpla con 6 reglas 
+    de seguridad: mínimo 8 caracteres, combinación de mayúsculas/minúsculas, al menos 
+    un número, no ser únicamente numérica, no contener el nombre/apellido/usuario, 
+    y coincidencia exacta con la confirmación.
+
+[ RF-03: GESTIÓN DE USUARIOS Y CONTROL DE ACCESO POR ROLES (RBAC) ]
+  • RF-03.1: El sistema debe permitir al Administrador registrar empleados 
+    ingresando Nombre, Apellidos, DPI (13 dígitos obligatorios), NIT (opcional), 
+    Teléfono, Dirección y Puesto.
+  • RF-03.2: El sistema debe autogenerar un nombre de usuario único derivado de la 
+    inicial del nombre y los apellidos limpios (ej. `cgomezperez`).
+  • RF-03.3: El sistema debe autogenerar una contraseña aleatoria segura de 12 
+    caracteres y desplegarla en un modal con la opción de copiar credenciales.
+  • RF-03.4: El sistema debe soportar tres roles operativos con permisos diferenciados: 
+    ADMINISTRADOR, VENDEDOR y ALMACENERO.
+  • RF-03.5: El sistema debe aplicar borrado lógico (soft delete) mediante el campo 
+    `is_active`, permitiendo dar de baja y reactivar empleados sin destruir datos.
+  • RF-03.6: El sistema debe disponer de un filtro de estado en la tabla de usuarios: 
+    "Todos los Estados", "Solo Activos (Ocultar dados de baja)" y "Solo Dados de Baja".
+
+[ RF-04: CONTROL DE INVENTARIO Y METODOLOGÍA PEPS / FIFO ]
+  • RF-04.1: El sistema debe clasificar los artículos comercializables por categorías 
+    y asignación de proveedor principal.
+  • RF-04.2: El sistema debe registrar las existencias divididas por lotes de 
+    inventario (`lotes_inventario`), controlando fecha de ingreso, número de lote, 
+    fecha de vencimiento y costo unitario.
+  • RF-04.3: El sistema debe ejecutar el algoritmo PEPS/FIFO (Primeras Entradas, 
+    Primeras Salidas) al procesar una venta, descontando automáticamente las unidades 
+    del lote con la fecha de vencimiento más próxima.
+  • RF-04.4: El sistema debe emitir alertas preventivas cuando un producto o lote 
+    se encuentre próximo a su fecha de caducidad o alcance el stock mínimo.
+
+[ RF-05: PUNTO DE VENTA (POS) Y FACTURACIÓN ]
+  • RF-05.1: El sistema debe permitir la selección ágil de productos mediante lector 
+    de código de barras o búsqueda interactiva.
+  • RF-05.2: El sistema debe calcular en tiempo real subtotales, descuentos y total.
+  • RF-05.3: El sistema debe calcular automáticamente el cambio a entregar al cliente 
+    según el monto recibido y el método de pago seleccionado.
+  • RF-05.4: El sistema debe registrar cada venta vinculándola al vendedor autenticado 
+    y emitir el comprobante transaccional.
+
+[ RF-06: GESTIÓN DE COMPRAS Y PROVEEDORES ]
+  • RF-06.1: El sistema debe registrar recepciones de mercancía asociadas a proveedores.
+  • RF-06.2: El sistema debe crear los lotes FIFO correspondientes e incrementar el 
+    stock total del producto al confirmar la recepción.
+
+[ RF-07: AUDITORÍA Y REPORTES ]
+  • RF-07.1: El sistema debe registrar de forma inmutable cada transacción relevante 
+    en una bitácora de auditoría detallando usuario, fecha/hora, acción e IP.
+  • RF-07.2: El sistema debe consolidar informes financieros y de mermas evitadas.
+
+
+2. REQUISITOS NO FUNCIONALES (RNF) — ORDENADOS POR PRIORIDAD TÉCNICA
+--------------------------------------------------------------------------------
+
+════════════════════════════════════════════════════════════════════════════════
+NIVEL 1: PRIORIDAD CRÍTICA (Seguridad, Integridad y Confiabilidad Financiera)
+════════════════════════════════════════════════════════════════════════════════
+  • RNF-01 (Seguridad y Encriptación):
+    Las contraseñas en PostgreSQL deben estar encriptadas mediante algoritmos de 
+    hashing de alta seguridad (PBKDF2/Argon2). Las peticiones privadas requieren 
+    obligatoriamente la cabecera `Authorization: Bearer <token_jwt>`.
+
+  • RNF-02 (Integridad Transaccional):
+    Cada operación financiera o de inventario debe ejecutarse bajo transacciones 
+    atómicas (`@transaction.atomic`) para garantizar que ante fallas de red o luz la 
+    base de datos nunca sufra inconsistencias o registros parciales.
+
+  • RNF-03 (Protección de Datos y Trazabilidad - Soft Delete):
+    Ningún registro operativo de ventas o usuarios debe eliminarse físicamente de 
+    la base de datos. Se exige el uso de borrado lógico (`is_active = False`) para 
+    asegurar la inmutabilidad del historial de auditoría.
+
+  • RNF-04 (Disponibilidad Operativa):
+    El sistema debe ofrecer una disponibilidad operativa mínima del 99.5% durante 
+    las horas de atención comercial del negocio.
+
+════════════════════════════════════════════════════════════════════════════════
+NIVEL 2: PRIORIDAD ALTA (Rendimiento y Desempeño Operacional)
+════════════════════════════════════════════════════════════════════════════════
+  • RNF-05 (Tiempo de Respuesta en Backend):
+    Los endpoints de la API REST deben procesar y devolver respuestas en un tiempo 
+    inferior a 500 milisegundos bajo condiciones normales de operación.
+
+  • RNF-06 (Velocidad de Interfaz en Punto de Venta):
+    El renderizado de vistas y actualización de componentes en la Single Page 
+    Application (React 18 SPA) debe ser instantáneo (< 100 milisegundos) sin 
+    recargas completas de navegador, asegurando fluidez en la caja registradora.
+
+════════════════════════════════════════════════════════════════════════════════
+NIVEL 3: PRIORIDAD MEDIA (Usabilidad, Ergonomía y Diseño UX/UI)
+════════════════════════════════════════════════════════════════════════════════
+  • RNF-07 (Ergonomía de Pantalla y Scroll Cero):
+    La tabla principal de datos debe presentar un máximo de 5 columnas esenciales, 
+    eliminando totalmente el desplazamiento horizontal (`overflow-x: hidden`).
+
+  • RNF-08 (Espacio de Trabajo Optimizado):
+    La barra lateral de navegación debe ser contraíble a 72px para maximizar el 
+    área de trabajo en pantallas o monitores de caja de menor resolución.
+
+  • RNF-09 (Consistencia en Sistema de Diseño):
+    La interfaz debe mantener un esquema de diseño claro/dorado corporativo 
+    (Light Gold Theme), ofreciendo alto contraste tipográfico y lectura descansada.
+
+════════════════════════════════════════════════════════════════════════════════
+NIVEL 4: PRIORIDAD COMPLEMENTARIA (Arquitectura, Mantenibilidad y Normalización)
+════════════════════════════════════════════════════════════════════════════════
+  • RNF-10 (Arquitectura Desacoplada):
+    El sistema debe separar estrictamente la capa de presentación (Frontend SPA) de 
+    la capa de lógica de negocios (Backend API REST), permitiendo la escalabilidad 
+    o reemplazo independiente de módulos.
+
+  • RNF-11 (Normalización de Base de Datos):
+    El esquema relacional de PostgreSQL debe estar estructurado bajo la Tercera Forma 
+    Normal (3NF), garantizando la ausencia de redundancias y facilitando consultas 
+    eficientes.
+================================================================================
