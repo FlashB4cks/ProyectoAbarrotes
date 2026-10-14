@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -109,7 +110,16 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -133,7 +143,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# CORS Configuration - Orígenes controlados para desarrollo y red local (POS y Escáner Móvil)
+# CORS Configuration - Orígenes controlados para desarrollo, red local y Google Cloud Run
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -142,4 +152,14 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://192\.168\.[0-9]+\.[0-9]+(:[0-9]+)?$",
     r"^http://172\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$",
     r"^http://10\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$",
+    r"^https://.*\.run\.app$",
+]
+
+CORS_EXTRA = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if CORS_EXTRA:
+    CORS_ALLOWED_ORIGINS = [orig.strip() for orig in CORS_EXTRA.split(',') if orig.strip()]
+
+# CSRF Trusted Origins for Cloud Run and production domains
+CSRF_TRUSTED_ORIGINS = [
+    orig.strip() for orig in os.getenv('CSRF_TRUSTED_ORIGINS', 'https://*.run.app,http://localhost:3000').split(',') if orig.strip()
 ]

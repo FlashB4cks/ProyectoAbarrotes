@@ -30,6 +30,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+staticfiles/
+backend/staticfiles/
 
 # Database local artifacts
 *.sqlite3

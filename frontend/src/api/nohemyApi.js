@@ -2,6 +2,9 @@
 // Usar ruta relativa '/api' en el navegador para que pase siempre por el proxy de Vite en puerto 3000.
 // Esto soluciona definitivamente el error 'Failed to fetch', bloqueos de puertos y CORS en telefonos moviles conectados por USB o Wi-Fi.
 const getApiBaseUrl = () => {
+  if (import.meta.env && import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
   if (typeof window !== 'undefined' && window.location) {
     return '/api';
   }

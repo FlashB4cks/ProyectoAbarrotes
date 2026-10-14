@@ -1,0 +1,27 @@
+# Archivos de entorno y credenciales
+.env
+.env.*
+*.env
+
+# Control de versiones
+.git/
+.gitignore
+
+# Dependencias y artefactos
+backend/venv/
+backend/staticfiles/
+backend/__pycache__/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Documentos ofimaticos pesados (no requeridos en imagen docker)
+*.docx
+*.pdf
+
+# Temporales de IDE y SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

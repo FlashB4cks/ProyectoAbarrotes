@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # Base de Datos: PostgreSQL 16
+  # ==========================================
+  db:
+    image: postgres:16-alpine
+    container_name: nohemysys_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-nohemysys_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-nohemysys_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - nohemysys_net
+
+  # ==========================================
+  # Backend: Django 6 + DRF + Gunicorn
+  # ==========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nohemysys_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DEBUG: "False"
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-production-super-secret-key-change-me-pos-2026}
+      DB_NAME: ${DB_NAME:-nohemysys_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_HOST: db
+      DB_PORT: 5432
+      RUN_MIGRATIONS: "true"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,backend,frontend,*"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,http://localhost"
+    ports:
+      - "8000:8000"
+    networks:
+      - nohemysys_net
+
+  # ==========================================
+  # Frontend: React 18 + Vite + Nginx
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nohemysys_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      PORT: 80
+      BACKEND_PROXY_URL: "http://backend:8000/api/"
+    ports:
+      - "3000:80"
+    networks:
+      - nohemysys_net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  nohemysys_net:
+    driver: bridge
