@@ -5,6 +5,7 @@ import { Toast, ConfirmModal } from '../../components/common';
 import ProductModal from './ProductModal';
 import MarcaModal from './MarcaModal';
 import UnidadModal from './UnidadModal';
+import CategoriaModal from './CategoriaModal';
 import SupplierModal from '../suppliers/SupplierModal';
 /* ── COMPONENTE: GESTIÓN DE PRODUCTOS, MARCAS Y UNIDADES ── */
 export const ProductsPage = ({ onOpenScanner }) => {
@@ -32,6 +33,12 @@ export const ProductsPage = ({ onOpenScanner }) => {
   const [editingMarca, setEditingMarca] = useState(null);
   const [confirmMarca, setConfirmMarca] = useState(null);
   const [marcaSearchTerm, setMarcaSearchTerm] = useState('');
+
+  // Modals de Categorías
+  const [isCategoriaModalOpen, setIsCategoriaModalOpen] = useState(false);
+  const [editingCategoria, setEditingCategoria] = useState(null);
+  const [confirmCategoria, setConfirmCategoria] = useState(null);
+  const [categoriaSearchTerm, setCategoriaSearchTerm] = useState('');
 
   // Modals de Unidades
   const [isUnidadModalOpen, setIsUnidadModalOpen] = useState(false);
@@ -135,6 +142,22 @@ export const ProductsPage = ({ onOpenScanner }) => {
     });
   }, [marcas, marcaSearchTerm]);
 
+  // Filtro de Categorías
+  const filteredCategorias = useMemo(() => {
+    let result = [...categorias];
+    if (categoriaSearchTerm.trim()) {
+      const term = categoriaSearchTerm.toLowerCase();
+      result = result.filter(c => 
+        (c.nombre && c.nombre.toLowerCase().includes(term)) ||
+        (c.descripcion && c.descripcion.toLowerCase().includes(term))
+      );
+    }
+    return result.sort((a, b) => {
+      if (a.is_active === b.is_active) return a.nombre.localeCompare(b.nombre);
+      return a.is_active ? -1 : 1;
+    });
+  }, [categorias, categoriaSearchTerm]);
+
   // Filtro de Unidades
   const filteredUnidades = useMemo(() => {
     let result = [...unidades];
@@ -219,6 +242,35 @@ export const ProductsPage = ({ onOpenScanner }) => {
     }
   };
 
+  /* ── OPERACIONES DE CATEGORÍAS ── */
+  const handleSaveCategoria = async (data) => {
+    try {
+      if (editingCategoria) {
+        await NohemyApi.updateCategoria(editingCategoria.id_categoria, data);
+        setToast({ type: 'success', message: `Categoría "${data.nombre}" actualizada exitosamente.` });
+      } else {
+        await NohemyApi.createCategoria(data);
+        setToast({ type: 'success', message: `Categoría "${data.nombre}" creada exitosamente.` });
+      }
+      setIsCategoriaModalOpen(false);
+      fetchData();
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    }
+  };
+
+  const handleToggleCategoria = async () => {
+    if (!confirmCategoria) return;
+    try {
+      const res = await NohemyApi.toggleCategoriaStatus(confirmCategoria.id_categoria);
+      setToast({ type: 'success', message: res.message });
+      setConfirmCategoria(null);
+      fetchData();
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    }
+  };
+
   /* ── OPERACIONES DE UNIDADES ── */
   const handleSaveUnidad = async (data) => {
     try {
@@ -257,6 +309,12 @@ export const ProductsPage = ({ onOpenScanner }) => {
           onClick={() => setActiveSubTab('productos')}
         >
           Catálogo de Productos ({products.length})
+        </button>
+        <button 
+          className={`tab-pill ${activeSubTab === 'categorias' ? 'active' : ''}`}
+          onClick={() => setActiveSubTab('categorias')}
+        >
+          Gestión de Categorías ({categorias.length})
         </button>
         <button 
           className={`tab-pill ${activeSubTab === 'marcas' ? 'active' : ''}`}
@@ -406,6 +464,74 @@ export const ProductsPage = ({ onOpenScanner }) => {
                       </tr>
                     );
                   })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* SUBTAB: CATEGORIAS */}
+      {activeSubTab === 'categorias' && (
+        <div className="card">
+          <div className="card-header">
+            <div className="search-and-filter-group">
+              <div className="search-box">
+                <input 
+                  type="text" 
+                  placeholder="Buscar categorías por nombre o descripción..." 
+                  value={categoriaSearchTerm}
+                  onChange={(e) => setCategoriaSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+            <button className="btn btn-primary" onClick={() => { setEditingCategoria(null); setIsCategoriaModalOpen(true); }}>
+              + Nueva Categoría
+            </button>
+          </div>
+
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Nombre de Categoría</th>
+                  <th>Descripción</th>
+                  <th>Estado</th>
+                  <th className="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCategorias.length === 0 ? (
+                  <tr><td colSpan="4" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No se encontraron categorías registradas.</td></tr>
+                ) : (
+                  filteredCategorias.map((c) => (
+                    <tr key={c.id_categoria} className={!c.is_active ? 'row-disabled' : ''}>
+                      <td>
+                        <strong style={{ fontSize: '14.5px', color: 'var(--text-main)' }}>{c.nombre}</strong>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{c.descripcion || '—'}</span>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${c.is_active ? 'active' : 'inactive'}`}>
+                          {c.is_active ? '● Activa' : '○ Dada de Baja'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="actions-cell">
+                          <button className="btn-icon-btn btn-edit" onClick={() => { setEditingCategoria(c); setIsCategoriaModalOpen(true); }}>
+                            Editar
+                          </button>
+                          <button 
+                            className={`btn-icon-btn ${c.is_active ? 'btn-danger-solid' : 'btn-success-solid'}`}
+                            onClick={() => setConfirmCategoria(c)}
+                          >
+                            {c.is_active ? 'Dar de Baja' : 'Reactivar'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
@@ -571,6 +697,24 @@ export const ProductsPage = ({ onOpenScanner }) => {
         message={`¿Está seguro de ${confirmProduct?.is_active ? 'dar de baja' : 'reactivar'} el producto "${confirmProduct?.nombre}"?`}
         isDanger={confirmProduct?.is_active}
         confirmText={confirmProduct?.is_active ? 'Dar de Baja' : 'Reactivar'}
+      />
+
+      {/* Modals de Categoría */}
+      <CategoriaModal 
+        isOpen={isCategoriaModalOpen}
+        onClose={() => setIsCategoriaModalOpen(false)}
+        onSave={handleSaveCategoria}
+        editingCategoria={editingCategoria}
+      />
+
+      <ConfirmModal 
+        isOpen={Boolean(confirmCategoria)}
+        onClose={() => setConfirmCategoria(null)}
+        onConfirm={handleToggleCategoria}
+        title={confirmCategoria?.is_active ? 'Dar de Baja Categoría' : 'Reactivar Categoría'}
+        message={`¿Está seguro de ${confirmCategoria?.is_active ? 'dar de baja' : 'reactivar'} la categoría "${confirmCategoria?.nombre}"?`}
+        isDanger={confirmCategoria?.is_active}
+        confirmText={confirmCategoria?.is_active ? 'Dar de Baja' : 'Reactivar'}
       />
 
       {/* Modals de Marca */}
