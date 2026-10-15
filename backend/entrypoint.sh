@@ -25,6 +25,9 @@ print('Advertencia: No se pudo verificar conexion tras 20 intentos, continuando.
 
   echo "Aplicando migraciones de base de datos..."
   python manage.py migrate --noinput || true
+
+  echo "Inicializando datos base (Roles, Admin, Consumidor Final)..."
+  python scripts/seed_initial_data.py || true
 fi
 
 exec "$@"
