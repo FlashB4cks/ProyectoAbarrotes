@@ -1,26 +1,30 @@
 #!/bin/sh
 set -e
 
-# Esperar a que la base de datos este disponible si DB_HOST es un host TCP (no socket Unix)
-case "$DB_HOST" in
-  /*)
-    echo "Conectando mediante socket Unix de Cloud SQL en $DB_HOST"
-    ;;
-  *)
-    if [ -n "$DB_HOST" ] && [ "$DB_HOST" != "127.0.0.1" ] && [ "$DB_HOST" != "localhost" ]; then
-      echo "Esperando conexion con la base de datos en $DB_HOST:${DB_PORT:-5432}..."
-      while ! nc -z "$DB_HOST" "${DB_PORT:-5432}"; do
-        sleep 1
-      done
-      echo "Base de datos conectada exitosamente."
-    fi
-    ;;
-esac
-
-# Ejecutar migraciones si la variable RUN_MIGRATIONS esta activa
+# Esperar a que la base de datos este lista antes de proceder con migraciones
 if [ "$RUN_MIGRATIONS" = "true" ]; then
+  echo "Verificando disponibilidad de conexion con la base de datos..."
+  python -c "
+import os, time, sys
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'nohemysys_core.settings')
+import django
+django.setup()
+from django.db import connection
+
+for attempt in range(1, 21):
+    try:
+        connection.ensure_connection()
+        print('Conexion con PostgreSQL establecida exitosamente.')
+        sys.exit(0)
+    except Exception as e:
+        print(f'Intento {attempt}/20: Esperando a la base de datos ({e})...')
+        time.sleep(2)
+
+print('Advertencia: No se pudo verificar conexion tras 20 intentos, continuando...')
+" || true
+
   echo "Aplicando migraciones de base de datos..."
-  python manage.py migrate --noinput
+  python manage.py migrate --noinput || true
 fi
 
 exec "$@"
