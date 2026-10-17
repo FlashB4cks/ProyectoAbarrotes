@@ -9,6 +9,7 @@ import CheckoutModal from './CheckoutModal';
 import InvoiceTicketModal from './InvoiceTicketModal';
 import SalesHistoryView from './SalesHistoryView';
 import CashControlPage from '../cash/CashControlPage';
+import OpenCashModal from '../cash/OpenCashModal';
 /* ── COMPONENTE ALIAS PARA RETROCOMPATIBILIDAD CON POS ── */
 export const SalesDailySummaryView = (props) => <CashControlPage isEmbedded={true} {...props} />;
 
@@ -22,6 +23,10 @@ export const POSPage = ({ onOpenScanner }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
 
+  // Control de Turno de Caja (RF-05)
+  const [cashStatus, setCashStatus] = useState(null);
+  const [isOpenCashModalOpen, setIsOpenCashModalOpen] = useState(false);
+
   // Estado del Carrito
   const [cart, setCart] = useState([]);
   const [client, setClient] = useState({ id_cliente: null, nombre_completo: 'Consumidor Final', nit: 'C/F' });
@@ -32,6 +37,17 @@ export const POSPage = ({ onOpenScanner }) => {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [completedSale, setCompletedSale] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // Consultar estado actual de caja
+  const fetchCashStatus = async () => {
+    try {
+      const data = await NohemyApi.getCajaActiva();
+      setCashStatus(data);
+      return data;
+    } catch (err) {
+      console.error('Error al consultar estado de caja:', err);
+    }
+  };
 
   // Cargar catálogo de productos y categorías
   const loadCatalog = async () => {
@@ -52,8 +68,15 @@ export const POSPage = ({ onOpenScanner }) => {
 
   useEffect(() => {
     loadCatalog();
+    fetchCashStatus();
     NohemyApi.getConsumidorFinal().then(cf => setClient(cf)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (posTab === 'mostrador') {
+      fetchCashStatus();
+    }
+  }, [posTab]);
 
   // Agregar producto al carrito
   const addToCart = (product, qtyToAdd = 1) => {
@@ -266,13 +289,18 @@ export const POSPage = ({ onOpenScanner }) => {
       if (e.key === 'F4') {
         e.preventDefault();
         if (cart.length > 0 && !isCheckoutModalOpen) {
+          if (cashStatus && !cashStatus.abierta) {
+            setToast({ type: 'warning', message: 'No se puede cobrar: Debe aperturar un turno en Control de Caja antes de facturar.' });
+            setIsOpenCashModalOpen(true);
+            return;
+          }
           setIsCheckoutModalOpen(true);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cart, isCheckoutModalOpen]);
+  }, [cart, isCheckoutModalOpen, cashStatus]);
 
   // Cálculos totales
   const subtotal = useMemo(() => {
@@ -350,10 +378,34 @@ export const POSPage = ({ onOpenScanner }) => {
               <IconCashRegister size={16} />
               <span>Control de Caja y Turnos</span>
             </span>
+            {cashStatus && (
+              <span style={{
+                fontSize: '10.5px',
+                padding: '2px 7px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                background: cashStatus.abierta ? '#dcfce7' : '#fee2e2',
+                color: cashStatus.abierta ? '#15803d' : '#b91c1c'
+              }}>
+                {cashStatus.abierta ? 'Abierta' : 'Cerrada'}
+              </span>
+            )}
           </button>
         </div>
 
         <div className="pos-control-actions">
+          {cashStatus && !cashStatus.abierta && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setIsOpenCashModalOpen(true)}
+              style={{ fontSize: '12px', padding: '6px 12px', background: '#b8860b', borderColor: '#b8860b', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}
+              title="Iniciar turno de caja para habilitar ventas"
+            >
+              <IconCashRegister size={14} />
+              <span>+ Abrir Turno de Caja</span>
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-secondary"
@@ -367,8 +419,8 @@ export const POSPage = ({ onOpenScanner }) => {
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={loadCatalog}
-            title="Recargar catálogo de productos"
+            onClick={() => { loadCatalog(); fetchCashStatus(); }}
+            title="Recargar catálogo y estado de caja"
             style={{ fontSize: '12.5px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <IconRefresh size={14} />
@@ -440,6 +492,49 @@ export const POSPage = ({ onOpenScanner }) => {
 
             {/* Cuadrícula de Productos */}
             <div className="pos-products-scroll">
+              {cashStatus && !cashStatus.abierta && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%)',
+                  border: '1px solid #fed7aa',
+                  borderRadius: '12px',
+                  padding: '14px 18px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  flexWrap: 'wrap',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '38px', height: '38px', borderRadius: '10px',
+                      background: 'rgba(239, 68, 68, 0.12)', color: '#dc2626',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <IconCashRegister size={20} />
+                    </div>
+                    <div>
+                      <strong style={{ fontSize: '13.5px', color: '#9a3412', display: 'block' }}>
+                        Turno de Caja Inactivo / Caja Cerrada
+                      </strong>
+                      <span style={{ fontSize: '12px', color: '#c2410c' }}>
+                        No se pueden emitir facturas ni cobrar ventas hasta realizar la apertura de turno en Control de Caja.
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff', fontSize: '12px', padding: '6px 14px', fontWeight: 700, borderRadius: '8px' }}
+                    onClick={() => setIsOpenCashModalOpen(true)}
+                  >
+                    + Abrir Turno de Caja
+                  </button>
+                </div>
+              )}
+
               {loading && products.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
                   Cargando productos del almacén...
@@ -657,11 +752,49 @@ export const POSPage = ({ onOpenScanner }) => {
                 <span className="pos-total-amount">Q {total.toFixed(2)}</span>
               </div>
 
+              {/* Alerta si la caja está cerrada */}
+              {cashStatus && !cashStatus.abierta && (
+                <div style={{
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '8px',
+                  padding: '8px 10px',
+                  marginBottom: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '11.5px',
+                  color: '#991b1b'
+                }}>
+                  <span style={{ fontSize: '15px' }}>🔒</span>
+                  <div style={{ flex: 1, lineHeight: '1.3' }}>
+                    <strong>Caja Cerrada:</strong> Requiere turno abierto para cobrar.
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ fontSize: '10.5px', padding: '3px 8px', fontWeight: 700, borderColor: '#fca5a5', color: '#991b1b' }}
+                    onClick={() => setIsOpenCashModalOpen(true)}
+                  >
+                    Abrir Caja
+                  </button>
+                </div>
+              )}
+
               <button
                 type="button"
                 className="pos-btn-checkout"
-                disabled={cart.length === 0}
-                onClick={() => setIsCheckoutModalOpen(true)}
+                disabled={cart.length === 0 || (cashStatus && !cashStatus.abierta)}
+                onClick={() => {
+                  if (cashStatus && !cashStatus.abierta) {
+                    setToast({ type: 'warning', message: 'No se puede procesar la venta: Debe aperturar la caja en Control de Caja primero.' });
+                    setIsOpenCashModalOpen(true);
+                    return;
+                  }
+                  setIsCheckoutModalOpen(true);
+                }}
+                style={cashStatus && !cashStatus.abierta ? { opacity: 0.6, cursor: 'not-allowed', filter: 'grayscale(0.4)' } : {}}
+                title={cashStatus && !cashStatus.abierta ? 'Turno de caja cerrado. Abra la caja para habilitar el cobro.' : 'Cobrar (F4)'}
               >
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                   <IconCash size={18} />
@@ -708,6 +841,16 @@ export const POSPage = ({ onOpenScanner }) => {
         isOpen={Boolean(completedSale)}
         onClose={() => setCompletedSale(null)}
         saleData={completedSale}
+      />
+
+      {/* Modal para Apertura Rápida de Caja */}
+      <OpenCashModal
+        isOpen={isOpenCashModalOpen}
+        onClose={() => setIsOpenCashModalOpen(false)}
+        onSuccess={(nuevaSesion) => {
+          fetchCashStatus();
+          setToast({ type: 'success', message: `Turno #${nuevaSesion.id_sesion} abierto exitosamente. Mostrador listo para facturar.` });
+        }}
       />
 
       <Toast toast={toast} onClose={() => setToast(null)} />

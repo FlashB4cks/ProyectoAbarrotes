@@ -9,6 +9,7 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
   const [montoRecibido, setMontoRecibido] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [cajaAbierta, setCajaAbierta] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
@@ -16,6 +17,16 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
       setMontoRecibido(total > 0 ? total.toFixed(2) : '');
       setErrorMsg('');
       setSubmitting(false);
+
+      // Validar si la caja sigue abierta
+      NohemyApi.getCajaActiva().then(res => {
+        if (!res?.abierta) {
+          setCajaAbierta(false);
+          setErrorMsg('No es posible procesar la venta: No hay ningún turno de caja abierto. Por favor aperture la caja en "Control de Caja".');
+        } else {
+          setCajaAbierta(true);
+        }
+      }).catch(() => {});
     }
   }, [isOpen, total]);
 
@@ -35,6 +46,10 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
 
   const handleConfirmSale = async (e) => {
     e.preventDefault();
+    if (!cajaAbierta) {
+      setErrorMsg('No es posible procesar la venta: No hay ningún turno de caja abierto.');
+      return;
+    }
     if (cartItems.length === 0) {
       setErrorMsg('El carrito está vacío.');
       return;
@@ -251,8 +266,8 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={submitting || isInsufficient}
-              style={{ minWidth: '180px', padding: '12px 20px', fontSize: '15px', fontWeight: 800 }}
+              disabled={submitting || isInsufficient || !cajaAbierta}
+              style={{ minWidth: '180px', padding: '12px 20px', fontSize: '15px', fontWeight: 800, opacity: !cajaAbierta ? 0.6 : 1 }}
             >
               {submitting ? 'Emitiendo Factura...' : 'Cobrar y Facturar (Enter)'}
             </button>

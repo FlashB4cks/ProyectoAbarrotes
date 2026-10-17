@@ -172,6 +172,15 @@ class VentaCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Debe ingresar al menos un producto para facturar.")
         return value
 
+    def validate(self, attrs):
+        # Validación estricta de turno de caja abierto (Control de Caja)
+        sesion_activa = SesionCaja.objects.filter(estado=SesionCaja.EstadoCaja.ABIERTA).first()
+        if not sesion_activa:
+            raise serializers.ValidationError(
+                "No es posible procesar la venta porque no hay ningún turno de caja abierto. Debe aperturar un turno en 'Control de Caja' antes de realizar ventas."
+            )
+        return attrs
+
     def create(self, validated_data):
         request = self.context.get('request')
         vendedor = (request.user if request and request.user.is_authenticated else None) or get_user_model().objects.filter(is_active=True).first()
@@ -298,6 +307,10 @@ class VentaCreateSerializer(serializers.Serializer):
 
             # Buscar sesión de caja abierta
             sesion_activa = SesionCaja.objects.filter(estado=SesionCaja.EstadoCaja.ABIERTA).first()
+            if not sesion_activa:
+                raise serializers.ValidationError(
+                    "No hay ningún turno de caja abierto en este momento. Por favor aperture la caja en 'Control de Caja'."
+                )
 
             # 4. Crear la cabecera de la Venta
             venta = Venta.objects.create(
