@@ -501,6 +501,14 @@ body {
   padding-right: 24px;
 }
 
+.table.table-compact th {
+  padding: 11px 12px !important;
+  font-size: 11px !important;
+}
+
+.table.table-compact td {
+  padding: 10px 12px !important;
+}
 
 .table tbody tr {
   transition: var(--transition);

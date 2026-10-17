@@ -369,36 +369,49 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
       ) : (
         /* Pestaña: Historial de Cortes Anteriores */
         <div className="card" style={{ padding: '16px 20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <h4 style={{ margin: 0, fontSize: '15px', color: 'var(--text-main)' }}>
-              Historial de Turnos y Cortes de Caja
-            </h4>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {historialCajas.length} turnos registrados
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '15px', color: 'var(--text-main)', fontWeight: 700 }}>
+                Historial de Turnos y Cortes de Caja
+              </h4>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Auditoría y archivo histórico de cierres de caja y arqueos físicos
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', background: 'var(--input-bg)', padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--card-border)' }}>
+                <strong>{historialCajas.length}</strong> {historialCajas.length === 1 ? 'turno registrado' : 'turnos registrados'}
+              </span>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '12px', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                onClick={fetchHistorial}
+                title="Actualizar historial de turnos"
+              >
+                <IconRefresh size={13} />
+                <span>Actualizar</span>
+              </button>
+            </div>
           </div>
 
-          <div className="table-responsive">
-            <table className="table">
+          <div className="table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table className="table table-compact" style={{ width: '100%', minWidth: '820px' }}>
               <thead>
                 <tr>
-                  <th>TURNO #</th>
-                  <th>FECHA APERTURA</th>
-                  <th>FECHA CIERRE</th>
-                  <th>CAJERO</th>
-                  <th className="text-right">BASE INICIAL</th>
-                  <th className="text-right">VENTAS EFECTIVO</th>
-                  <th className="text-right">ESPERADO</th>
-                  <th className="text-right">CONTADO</th>
-                  <th style={{ textAlign: 'center' }}>ARQUEO / DIFERENCIA</th>
-                  <th style={{ textAlign: 'center' }}>ESTADO</th>
-                  <th className="text-right">COMPROBANTE</th>
+                  <th style={{ width: '80px' }}>TURNO</th>
+                  <th style={{ width: '190px' }}>FECHA Y HORARIO</th>
+                  <th style={{ width: '150px' }}>CAJERO</th>
+                  <th className="text-right" style={{ width: '140px' }}>FLUJO EFECTIVO</th>
+                  <th className="text-right" style={{ width: '150px' }}>ARQUEO EN GAVETA</th>
+                  <th style={{ textAlign: 'center', width: '150px' }}>BALANCE Y ESTADO</th>
+                  <th className="text-right" style={{ width: '110px' }}>COMPROBANTE</th>
                 </tr>
               </thead>
               <tbody>
                 {historialCajas.length === 0 ? (
                   <tr>
-                    <td colSpan="11" style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                       No hay historial de cortes de caja registrados en el sistema.
                     </td>
                   </tr>
@@ -408,62 +421,96 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
                     const isCuadrada = Math.abs(dif) < 0.01;
                     const isAbiertaCaja = c.estado === 'ABIERTA';
 
+                    // Formateo de fecha y hora
+                    const fechaObj = c.fecha_apertura ? new Date(c.fecha_apertura) : null;
+                    const fechaAperturaStr = fechaObj ? fechaObj.toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
+                    const horaAperturaStr = fechaObj ? fechaObj.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' }) : '';
+
+                    const fechaCierreObj = c.fecha_cierre ? new Date(c.fecha_cierre) : null;
+                    const horaCierreStr = fechaCierreObj ? fechaCierreObj.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' }) : 'En curso';
+
                     return (
                       <tr key={c.id_sesion}>
                         <td>
-                          <strong>#{c.id_sesion}</strong>
-                        </td>
-                        <td style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-                          {c.fecha_apertura ? new Date(c.fecha_apertura).toLocaleString('es-GT', { dateStyle: 'short', timeStyle: 'short' }) : '-'}
-                        </td>
-                        <td style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-                          {c.fecha_cierre ? new Date(c.fecha_cierre).toLocaleString('es-GT', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                          <span className="user-code" style={{ fontSize: '12px' }}>#{c.id_sesion}</span>
                         </td>
                         <td>
-                          <div style={{ fontSize: '12.5px', fontWeight: 600 }}>{c.usuario_apertura_nombre}</div>
-                          {c.usuario_cierre_nombre && c.usuario_cierre_nombre !== c.usuario_apertura_nombre && (
+                          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-main)' }}>
+                            {fechaAperturaStr}
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                            {horaAperturaStr} → {horaCierreStr}
+                            {c.tiempo_abierta ? ` (${c.tiempo_abierta})` : ''}
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>
+                            {c.usuario_apertura_nombre || 'Sistema'}
+                          </div>
+                          {c.usuario_cierre_nombre && c.usuario_cierre_nombre !== c.usuario_apertura_nombre ? (
                             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Cierre: {c.usuario_cierre_nombre}</span>
-                          )}
-                        </td>
-                        <td className="text-right" style={{ fontSize: '12.5px' }}>
-                          Q {Number(c.monto_inicial || 0).toFixed(2)}
-                        </td>
-                        <td className="text-right" style={{ fontSize: '12.5px', color: '#10b981', fontWeight: 700 }}>
-                          Q {Number(c.total_ventas_efectivo || 0).toFixed(2)}
-                        </td>
-                        <td className="text-right" style={{ fontSize: '12.5px', fontWeight: 700 }}>
-                          Q {Number(c.monto_esperado || 0).toFixed(2)}
-                        </td>
-                        <td className="text-right" style={{ fontSize: '12.5px', fontWeight: 800 }}>
-                          {c.monto_real_efectivo !== null ? `Q ${Number(c.monto_real_efectivo).toFixed(2)}` : '—'}
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          {isAbiertaCaja ? (
-                            <span style={{ fontSize: '11.5px', color: '#10b981', fontWeight: 600 }}>En curso</span>
                           ) : (
-                            <span style={{
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              background: isCuadrada ? 'rgba(16, 185, 129, 0.15)' : dif > 0 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                              color: isCuadrada ? '#10b981' : dif > 0 ? '#b8860b' : '#ef4444'
-                            }}>
-                              {isCuadrada ? '✓ Cuadrada' : (dif > 0 ? `+Q ${dif.toFixed(2)}` : `-Q ${Math.abs(dif).toFixed(2)}`)}
-                            </span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Turno completo</span>
                           )}
                         </td>
+                        <td className="text-right">
+                          <div style={{ fontSize: '13px', color: '#10b981', fontWeight: 700 }}>
+                            +Q {Number(c.total_ventas_efectivo || 0).toFixed(2)}
+                            <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 500, marginLeft: '3px' }}>ventas</span>
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Base: Q {Number(c.monto_inicial || 0).toFixed(2)}
+                          </div>
+                        </td>
+                        <td className="text-right">
+                          <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>
+                            {c.monto_real_efectivo !== null ? `Q ${Number(c.monto_real_efectivo).toFixed(2)}` : '—'}
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, marginLeft: '3px' }}>FÍSICO</span>
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Esperado: Q {Number(c.monto_esperado || 0).toFixed(2)}
+                          </div>
+                        </td>
                         <td style={{ textAlign: 'center' }}>
-                          <span className={`status-badge ${isAbiertaCaja ? 'active' : 'inactive'}`}>
-                            {isAbiertaCaja ? '● Abierta' : '○ Cerrada'}
-                          </span>
+                          <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                            {isAbiertaCaja ? (
+                              <span style={{
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                background: 'rgba(16, 185, 129, 0.15)',
+                                color: '#059669',
+                                border: '1px solid rgba(16, 185, 129, 0.3)'
+                              }}>
+                                ● Turno en curso
+                              </span>
+                            ) : (
+                              <span style={{
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                background: isCuadrada ? 'rgba(16, 185, 129, 0.12)' : dif > 0 ? 'rgba(245, 158, 11, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                color: isCuadrada ? '#059669' : dif > 0 ? '#b45309' : '#dc2626',
+                                border: `1px solid ${isCuadrada ? 'rgba(16, 185, 129, 0.25)' : dif > 0 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {isCuadrada ? '✓ Cuadrada' : (dif > 0 ? `+Q ${dif.toFixed(2)} Sobrante` : `-Q ${Math.abs(dif).toFixed(2)} Faltante`)}
+                              </span>
+                            )}
+                            <span className={`status-badge ${isAbiertaCaja ? 'active' : 'inactive'}`} style={{ fontSize: '10.5px' }}>
+                              {isAbiertaCaja ? 'Abierta' : 'Cerrada'}
+                            </span>
+                          </div>
                         </td>
                         <td className="text-right">
                           <button
                             type="button"
                             className="btn btn-secondary"
-                            style={{ fontSize: '11.5px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            style={{ fontSize: '11.5px', padding: '5px 10px', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}
                             onClick={() => setSelectedCorteTicket(c)}
+                            title="Ver e imprimir comprobante térmico"
                           >
                             <IconPrinter size={13} />
                             <span>Ticket</span>
