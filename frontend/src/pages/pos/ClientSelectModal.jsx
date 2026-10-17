@@ -163,12 +163,12 @@ export const ClientSelectModal = ({ isOpen, onClose, onSelectClient, selectedCli
                     required
                     value={newClient.nombre_completo}
                     onChange={(e) => setNewClient({ ...newClient, nombre_completo: e.target.value })}
-                    placeholder="Ej. Juan Pérez / Abarrotes La Bendición"
+                    placeholder=""
                     autoFocus
                   />
                 </div>
                 <div className="form-group">
-                  <label>NIT (Máx 9 car. / 8 núm.)</label>
+                  <label>NIT</label>
                   <input
                     type="text"
                     value={newClient.nit}
@@ -177,35 +177,29 @@ export const ClientSelectModal = ({ isOpen, onClose, onSelectClient, selectedCli
                       const isDigits = /^\d+$/.test(clean);
                       setNewClient({ ...newClient, nit: isDigits ? clean.slice(0, 8) : clean.slice(0, 9) });
                     }}
-                    placeholder="Ej. 1234567-8 o 12345678"
+                    placeholder=""
                     maxLength={9}
                   />
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Máx 9 car. con letras o 8 números.
-                  </span>
                 </div>
                 <div className="form-group">
-                  <label>DPI / Documento (13 dígitos)</label>
+                  <label>DPI</label>
                   <input
                     type="text"
                     value={newClient.dpi}
                     onChange={(e) => setNewClient({ ...newClient, dpi: e.target.value.replace(/\D/g, '').slice(0, 13) })}
-                    placeholder="Ej. 2450123450101"
+                    placeholder=""
                     maxLength={13}
                   />
                 </div>
                 <div className="form-group">
-                  <label>Teléfono (8 dígitos)</label>
+                  <label>Teléfono</label>
                   <input
                     type="tel"
                     value={newClient.telefono}
                     onChange={(e) => setNewClient({ ...newClient, telefono: e.target.value.replace(/\D/g, '').slice(0, 8) })}
-                    placeholder="Ej. 55551234"
+                    placeholder=""
                     maxLength={8}
                   />
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Exactamente 8 dígitos numéricos.
-                  </span>
                 </div>
                 <div className="form-group">
                   <label>Dirección</label>
@@ -213,7 +207,7 @@ export const ClientSelectModal = ({ isOpen, onClose, onSelectClient, selectedCli
                     type="text"
                     value={newClient.direccion}
                     onChange={(e) => setNewClient({ ...newClient, direccion: e.target.value })}
-                    placeholder="Ej. Ciudad de Guatemala"
+                    placeholder=""
                   />
                 </div>
               </div>

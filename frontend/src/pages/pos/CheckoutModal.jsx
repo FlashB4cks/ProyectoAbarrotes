@@ -62,7 +62,15 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
 
       const result = await NohemyApi.createVenta(payload);
       playCashRegisterSound();
-      onSuccessSale(result);
+      const saleObj = result?.venta || result;
+      if (saleObj) {
+        if (!saleObj.monto_recibido) saleObj.monto_recibido = metodoPago === 'EFECTIVO' ? parsedRecibido : total;
+        if (saleObj.cambio === undefined && saleObj.cambio_entregado === undefined) saleObj.cambio = cambio;
+        if (!saleObj.metodo_pago) saleObj.metodo_pago = metodoPago;
+        if (!saleObj.cliente_nombre && client?.nombre_completo) saleObj.cliente_nombre = client.nombre_completo;
+        if (!saleObj.cliente_nit && client?.nit) saleObj.cliente_nit = client.nit;
+      }
+      onSuccessSale(saleObj);
     } catch (err) {
       playScannerBeep(false);
       setErrorMsg(err.message || 'Error al procesar la venta.');

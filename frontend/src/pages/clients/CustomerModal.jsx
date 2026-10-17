@@ -143,7 +143,7 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
                 name="nombre_completo"
                 value={formData.nombre_completo}
                 onChange={handleChange}
-                placeholder="Ej. Doña María López o Abarrotes El Roble"
+                placeholder=""
                 className={`form-control ${errors.nombre_completo ? 'input-error' : ''}`}
                 autoFocus
               />
@@ -153,33 +153,30 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div className="form-group">
                 <label style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '5px', display: 'block' }}>
-                  NIT (Número o Letras)
+                  NIT
                 </label>
                 <input 
                   type="text"
                   name="nit"
                   value={formData.nit}
                   onChange={handleChange}
-                  placeholder="Ej. 1234567-8 o 12345678"
+                  placeholder=""
                   className={`form-control ${errors.nit ? 'input-error' : ''}`}
                   maxLength={9}
                 />
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  Límite: 9 caracteres con letras/guión o 8 si son solo números.
-                </span>
                 {errors.nit && <span className="field-error">{errors.nit}</span>}
               </div>
 
               <div className="form-group">
                 <label style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '5px', display: 'block' }}>
-                  DPI (13 dígitos)
+                  DPI
                 </label>
                 <input 
                   type="text"
                   name="dpi"
                   value={formData.dpi}
                   onChange={handleChange}
-                  placeholder="Ej. 2450123450101"
+                  placeholder=""
                   className={`form-control ${errors.dpi ? 'input-error' : ''}`}
                   maxLength="13"
                 />
@@ -190,20 +187,17 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div className="form-group">
                 <label style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '5px', display: 'block' }}>
-                  Teléfono / Móvil (8 dígitos)
+                  Teléfono
                 </label>
                 <input 
                   type="text"
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleChange}
-                  placeholder="Ej. 55123456"
+                  placeholder=""
                   className={`form-control ${errors.telefono ? 'input-error' : ''}`}
                   maxLength={8}
                 />
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  Límite: exactamente 8 dígitos numéricos.
-                </span>
                 {errors.telefono && <span className="field-error">{errors.telefono}</span>}
               </div>
 
@@ -216,7 +210,7 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
                   name="direccion"
                   value={formData.direccion}
                   onChange={handleChange}
-                  placeholder="Ej. Zona 1, Mixco, Guatemala"
+                  placeholder=""
                   className="form-control"
                 />
               </div>

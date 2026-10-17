@@ -731,19 +731,28 @@ body {
 .modal-body {
   padding: 20px 22px;
   overflow-y: auto;
+  overflow-x: hidden !important;
   flex: 1;
+}
+
+.modal-container.modal-product {
+  max-width: 680px !important;
+  width: 95% !important;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .form-group.full-width {

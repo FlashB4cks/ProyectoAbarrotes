@@ -107,7 +107,7 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
 
   return (
     <div className="modal-backdrop" onClick={(e) => { if (e.target.className.includes('modal-backdrop')) onClose(); }}>
-      <div className="modal-container" style={{ maxWidth: '640px' }}>
+      <div className="modal-container modal-product">
         <div className="modal-header">
           <h3>{editingProduct ? 'Editar Producto' : 'Registrar Nuevo Producto'}</h3>
           <button className="btn-close" onClick={onClose}>✕</button>
@@ -116,14 +116,14 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-grid">
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '6px' }}>
                 <label style={{ margin: 0 }}>Código de Barras <span className="req">*</span></label>
                 {onOpenScanner && (
                   <button 
                     type="button" 
                     onClick={onOpenScanner}
                     className="btn-scanner-pill"
-                    style={{ padding: '2px 10px', fontSize: '11.5px' }}
+                    style={{ padding: '2px 10px', fontSize: '11.5px', whiteSpace: 'nowrap' }}
                     title="Configuración y prueba de lector de códigos de barras"
                   >
                     Lector USB / Probar
@@ -222,7 +222,7 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
             </div>
 
             <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
                 <label style={{ margin: 0 }}>Proveedor Principal</label>
                 <button
                   type="button"
@@ -235,7 +235,8 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
                     fontWeight: '600',
                     cursor: 'pointer',
                     padding: 0,
-                    textDecoration: 'underline'
+                    textDecoration: 'underline',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   + Nuevo Proveedor
@@ -247,14 +248,14 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
               </select>
             </div>
 
-            <div className="form-group full-width">
+            <div className="form-group" style={{ gridColumn: 'span 2' }}>
               <label>Descripción Corta / Detalles</label>
               <input 
                 type="text" 
                 name="descripcion" 
                 value={formData.descripcion} 
                 onChange={handleChange} 
-                placeholder="Ej. Presentación, características o sabor"
+                placeholder="Presentación, características o sabor"
               />
             </div>
           </div>

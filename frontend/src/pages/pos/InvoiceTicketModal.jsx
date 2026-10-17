@@ -5,20 +5,30 @@ import { IconPrinter, IconReceipt } from '../../components/icons/Icons';
 export const InvoiceTicketModal = ({ isOpen, onClose, saleData }) => {
   if (!isOpen || !saleData) return null;
 
+  // Extraer el objeto de venta real tanto si viene envuelto en { venta: ... } como si viene plano
+  const sale = saleData.venta || saleData;
+
   const handlePrint = () => {
     window.print();
   };
 
-  const fechaStr = saleData.fecha_venta
-    ? new Date(saleData.fecha_venta).toLocaleString('es-GT', { dateStyle: 'short', timeStyle: 'short' })
+  const rawFecha = sale.fecha_hora || sale.fecha_venta || sale.fecha;
+  const fechaStr = rawFecha
+    ? new Date(rawFecha).toLocaleString('es-GT', { dateStyle: 'short', timeStyle: 'short' })
     : new Date().toLocaleString('es-GT');
 
-  const detalles = saleData.detalles || [];
-  const subtotalCalc = detalles.reduce((acc, d) => acc + (parseFloat(d.subtotal) || 0), 0);
-  const total = parseFloat(saleData.total) || 0;
-  const descuento = parseFloat(saleData.descuento) || 0;
-  const recibido = parseFloat(saleData.monto_recibido) || total;
-  const cambio = parseFloat(saleData.cambio) || 0;
+  const detalles = sale.detalles || sale.items || [];
+  const codigoFactura = sale.codigo_factura || sale.numero_factura || 'TICKET-POS';
+  const clienteNombre = sale.cliente_nombre || sale.cliente?.nombre_completo || (typeof sale.cliente === 'string' ? sale.cliente : 'Consumidor Final');
+  const clienteNit = sale.cliente_nit || sale.cliente?.nit || 'C/F';
+  const vendedor = sale.vendedor_nombre || sale.cajero || '';
+  const metodoPago = sale.metodo_pago || 'EFECTIVO';
+
+  const total = parseFloat(sale.total) || 0;
+  const descuento = parseFloat(sale.descuento) || 0;
+  const subtotalCalc = parseFloat(sale.subtotal) || detalles.reduce((acc, d) => acc + (parseFloat(d.subtotal) || 0), 0) || total;
+  const cambio = parseFloat(sale.cambio_entregado ?? sale.cambio) || 0;
+  const recibido = parseFloat(sale.monto_recibido) || (metodoPago === 'EFECTIVO' ? (total + cambio) : total);
 
   return (
     <div className="modal-backdrop" onClick={(e) => { if (e.target.className.includes('modal-backdrop')) onClose(); }}>
@@ -30,7 +40,7 @@ export const InvoiceTicketModal = ({ isOpen, onClose, saleData }) => {
             </span>
             <div>
               <h3>Comprobante de Venta</h3>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Factura {saleData.codigo_factura}</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Factura {codigoFactura}</span>
             </div>
           </div>
           <button className="btn-close" onClick={onClose}>✕</button>
@@ -49,18 +59,18 @@ export const InvoiceTicketModal = ({ isOpen, onClose, saleData }) => {
             <div className="ticket-divider" />
 
             <div style={{ fontSize: '11.5px', display: 'flex', justifyContent: 'space-between' }}>
-              <span><strong>FACTURA:</strong> {saleData.codigo_factura}</span>
+              <span><strong>FACTURA:</strong> {codigoFactura}</span>
               <span>{fechaStr}</span>
             </div>
             <div style={{ fontSize: '11.5px', marginTop: '3px' }}>
-              <strong>CLIENTE:</strong> {saleData.cliente?.nombre_completo || 'Consumidor Final'}
+              <strong>CLIENTE:</strong> {clienteNombre}
             </div>
             <div style={{ fontSize: '11.5px', marginTop: '2px' }}>
-              <strong>NIT/DPI:</strong> {saleData.cliente?.nit || 'C/F'}
+              <strong>NIT/DPI:</strong> {clienteNit}
             </div>
-            {saleData.vendedor_nombre && (
+            {vendedor && (
               <div style={{ fontSize: '11.5px', marginTop: '2px' }}>
-                <strong>CAJERO:</strong> {saleData.vendedor_nombre}
+                <strong>CAJERO:</strong> {vendedor}
               </div>
             )}
 
@@ -114,9 +124,9 @@ export const InvoiceTicketModal = ({ isOpen, onClose, saleData }) => {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
                 <span>FORMA DE PAGO:</span>
-                <span>{saleData.metodo_pago}</span>
+                <span style={{ fontWeight: 700 }}>{metodoPago}</span>
               </div>
-              {saleData.metodo_pago === 'EFECTIVO' && (
+              {metodoPago === 'EFECTIVO' && (
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>PAGÓ CON:</span>

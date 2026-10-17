@@ -306,7 +306,8 @@ export const POSPage = ({ onOpenScanner }) => {
   const handleSaleSuccess = (saleResult) => {
     setIsCheckoutModalOpen(false);
     clearCart();
-    setCompletedSale(saleResult);
+    const actualSale = saleResult?.venta || saleResult;
+    setCompletedSale(actualSale);
     loadCatalog();
   };
 
