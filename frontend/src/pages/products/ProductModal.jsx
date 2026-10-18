@@ -161,7 +161,6 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
                 name="nombre" 
                 value={formData.nombre} 
                 onChange={handleChange}
-                placeholder="Ej. Leche Entera 1 Litro"
                 className={errors.nombre ? 'input-error' : ''}
               />
               {errors.nombre && <span className="error-text">{errors.nombre}</span>}

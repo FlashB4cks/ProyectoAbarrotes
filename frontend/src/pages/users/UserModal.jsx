@@ -107,17 +107,17 @@ export const UserModal = ({ isOpen, onClose, onSave, editingUser, users = [], ro
               {errors.last_name && <span className="error-text">{errors.last_name}</span>}
             </div>
             <div className="form-group">
-              <label>DPI (Guatemala) {!editingUser && <span className="req">*</span>}</label>
+              <label>DPI {!editingUser && <span className="req">*</span>}</label>
               <input type="text" name="dpi" maxLength="13" value={formData.dpi} onChange={handleChange} className={errors.dpi ? 'input-error' : ''} />
               {errors.dpi && <span className="error-text">{errors.dpi}</span>}
             </div>
             <div className="form-group">
-              <label>NIT <span className="opt">(Opcional)</span></label>
+              <label>NIT</label>
               <input type="text" name="nit" value={formData.nit} onChange={handleChange} />
             </div>
             <div className="form-group">
-              <label>Teléfono de Contacto <span className="opt">(Máx. 8 dígitos)</span></label>
-              <input type="text" name="telefono" maxLength="8" placeholder="Ej. 55551234" value={formData.telefono} onChange={handleChange} className={errors.telefono ? 'input-error' : ''} />
+              <label>Teléfono</label>
+              <input type="text" name="telefono" maxLength="8" value={formData.telefono} onChange={handleChange} className={errors.telefono ? 'input-error' : ''} />
               {errors.telefono && <span className="error-text">{errors.telefono}</span>}
             </div>
             <div className="form-group">

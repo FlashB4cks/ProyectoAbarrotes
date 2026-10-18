@@ -127,7 +127,6 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
                 name="nombre_empresa" 
                 value={formData.nombre_empresa} 
                 onChange={handleChange}
-                placeholder="Ej. Cervecería Centro Americana, S.A., Omnilife o Malher"
                 className={errors.nombre_empresa ? 'input-error' : ''}
                 autoFocus
               />
@@ -135,19 +134,15 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
             </div>
 
             <div className="form-group">
-              <label>NIT Comercial</label>
+              <label>NIT</label>
               <input 
                 type="text" 
                 name="nit" 
                 value={formData.nit} 
                 onChange={handleChange}
-                placeholder="Ej. 1234567-8 o 12345678"
                 maxLength={9}
                 className={errors.nit ? 'input-error' : ''}
               />
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                Máx 9 caracteres con letras/guión o 8 números.
-              </span>
               {errors.nit && <span className="error-text">{errors.nit}</span>}
             </div>
 
@@ -158,24 +153,19 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
                 name="contacto" 
                 value={formData.contacto} 
                 onChange={handleChange}
-                placeholder="Ej. Lic. Carlos Gómez / Ventas"
               />
             </div>
 
             <div className="form-group">
-              <label>Teléfono de Contacto (8 dígitos)</label>
+              <label>Teléfono de Contacto</label>
               <input 
                 type="text" 
                 name="telefono" 
                 value={formData.telefono} 
                 onChange={handleChange}
-                placeholder="Ej. 23456789 o 55443322"
                 maxLength={8}
                 className={errors.telefono ? 'input-error' : ''}
               />
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                Exactamente 8 dígitos numéricos.
-              </span>
               {errors.telefono && <span className="error-text">{errors.telefono}</span>}
             </div>
 
@@ -186,7 +176,6 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
                 name="email" 
                 value={formData.email} 
                 onChange={handleChange}
-                placeholder="Ej. pedidos@proveedor.com"
                 className={errors.email ? 'input-error' : ''}
               />
               {errors.email && <span className="error-text">{errors.email}</span>}
@@ -199,7 +188,6 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
                 name="direccion" 
                 value={formData.direccion} 
                 onChange={handleChange}
-                placeholder="Ej. Calzada Roosevelt 15-40 Zona 11, Bodega 4"
               />
             </div>
           </div>
