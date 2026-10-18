@@ -8,7 +8,7 @@ from .serializers import CustomTokenObtainPairSerializer, UserSerializer, UserAd
 
 User = get_user_model()
 
-from .permissions import IsAdminUserRole, IsAdminOrReadOnly
+from .permissions import IsAdminUserRole
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer

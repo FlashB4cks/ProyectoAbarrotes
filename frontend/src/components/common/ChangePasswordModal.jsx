@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import NohemyApi from '../../api/nohemyApi';
-import Toast from './Toast';
 
 /* ── MODAL: CAMBIO DE CONTRASEÑA ── */
 export const ChangePasswordModal = ({ isOpen, user, onSuccess }) => {

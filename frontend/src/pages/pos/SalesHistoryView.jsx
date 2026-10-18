@@ -3,7 +3,6 @@ import { NohemyApi } from '../../api/nohemyApi';
 import { Toast } from '../../components/common';
 import { IconPrinter, IconRefresh } from '../../components/icons/Icons';
 
-import InvoiceTicketModal from './InvoiceTicketModal';
 /* ── COMPONENTE: HISTORIAL DE VENTAS Y FACTURAS ── */
 export const SalesHistoryView = ({ onReprintTicket }) => {
   const [sales, setSales] = useState([]);

@@ -1,14 +1,12 @@
-from rest_framework import viewsets, permissions, status
-from rest_framework.views import APIView
+from rest_framework import viewsets, status
 from rest_framework.response import Response
-from django.db.models import Sum, Count, F, Q
+from django.db.models import Sum, Count, F
 from django.utils import timezone
 from datetime import timedelta, datetime
 from decimal import Decimal
 
-from .models import Venta, DetalleVenta, SalidaLoteVenta, MovimientoFinanciero
+from .models import Venta, DetalleVenta, SalidaLoteVenta
 from apps.inventario.models import LoteInventario, AjusteInventario
-from apps.catalogos.models import Categoria, Producto
 from apps.autenticacion.permissions import IsAdminUserRole
 
 

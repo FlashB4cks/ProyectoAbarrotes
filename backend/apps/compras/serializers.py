@@ -4,7 +4,7 @@ from django.utils import timezone
 from datetime import date, timedelta
 from decimal import Decimal
 from .models import Compra, DetalleCompra
-from apps.catalogos.models import Proveedor, Producto
+from apps.catalogos.models import Producto
 from apps.inventario.models import LoteInventario
 
 class DetalleCompraSerializer(serializers.ModelSerializer):

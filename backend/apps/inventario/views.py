@@ -3,12 +3,12 @@ import uuid
 import socket
 import datetime
 from decimal import Decimal
-from rest_framework import viewsets, permissions, filters, status
+from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import transaction, models
-from django.db.models import Q, F, Sum
+from django.db.models import Q, F
 from django.utils import timezone
 from .models import LoteInventario, AjusteInventario
 from .serializers import LoteInventarioSerializer, AjusteInventarioSerializer

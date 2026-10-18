@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Categoria, UnidadMedida, Proveedor, Producto, Departamento, Municipio, Direccion, Marca
+from .models import Categoria, UnidadMedida, Proveedor, Producto, Marca
 
 class MarcaSerializer(serializers.ModelSerializer):
     class Meta:

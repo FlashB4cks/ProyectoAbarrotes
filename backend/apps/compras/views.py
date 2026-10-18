@@ -1,9 +1,9 @@
-from rest_framework import viewsets, permissions, status, filters
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction, models
 from django.db.models import Q, F
-from .models import Compra, DetalleCompra
+from .models import Compra
 from .serializers import CompraSerializer, CompraCreateSerializer
 from apps.inventario.models import LoteInventario
 from apps.autenticacion.permissions import IsAdminUserRole
