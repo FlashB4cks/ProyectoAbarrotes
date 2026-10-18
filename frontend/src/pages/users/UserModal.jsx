@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 export const UserModal = ({ isOpen, onClose, onSave, editingUser, users = [], roles = [] }) => {
   const [formData, setFormData] = useState({ first_name: '', last_name: '', dpi: '', nit: '', telefono: '', direccion: '', rol: 'VENDEDOR' });
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (editingUser) {
@@ -75,10 +76,26 @@ export const UserModal = ({ isOpen, onClose, onSave, editingUser, users = [], ro
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    onSave(formData);
+    try {
+      setSubmitting(true);
+      await onSave(formData);
+    } catch (err) {
+      const errMap = { form: err.message || 'Error al guardar el empleado.' };
+      if (err.details && typeof err.details === 'object') {
+        if (err.details.dpi) errMap.dpi = Array.isArray(err.details.dpi) ? err.details.dpi[0] : err.details.dpi;
+        if (err.details.first_name) errMap.first_name = Array.isArray(err.details.first_name) ? err.details.first_name[0] : err.details.first_name;
+        if (err.details.last_name) errMap.last_name = Array.isArray(err.details.last_name) ? err.details.last_name[0] : err.details.last_name;
+        if (err.details.email) errMap.email = Array.isArray(err.details.email) ? err.details.email[0] : err.details.email;
+        if (err.details.nit) errMap.nit = Array.isArray(err.details.nit) ? err.details.nit[0] : err.details.nit;
+        if (err.details.telefono) errMap.telefono = Array.isArray(err.details.telefono) ? err.details.telefono[0] : err.details.telefono;
+      }
+      setErrors(errMap);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -89,6 +106,11 @@ export const UserModal = ({ isOpen, onClose, onSave, editingUser, users = [], ro
           <button className="btn-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="modal-body">
+          {errors.form && (
+            <div className="alert-box alert-error" style={{ marginBottom: '14px' }}>
+              {errors.form}
+            </div>
+          )}
           {!editingUser && (
             <div className="info-banner">
               <strong>Generación Automática de Credenciales</strong>
@@ -142,8 +164,10 @@ export const UserModal = ({ isOpen, onClose, onSave, editingUser, users = [], ro
             <input type="text" name="direccion" value={formData.direccion} onChange={handleChange} />
           </div>
           <div className="modal-footer" style={{ marginTop: '24px' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn btn-primary">{editingUser ? 'Guardar Cambios' : 'Generar Empleado'}</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>Cancelar</button>
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Guardando...' : (editingUser ? 'Guardar Cambios' : 'Generar Empleado')}
+            </button>
           </div>
         </form>
       </div>

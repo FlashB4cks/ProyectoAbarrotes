@@ -115,9 +115,36 @@ class RolSerializer(serializers.ModelSerializer):
         model = Rol
         fields = ['id_rol', 'codigo', 'nombre', 'descripcion', 'permisos', 'is_active', 'fecha_creacion', 'usuarios_asignados']
         read_only_fields = ['id_rol', 'fecha_creacion']
+        extra_kwargs = {
+            'codigo': {'error_messages': {'unique': 'Ya existe un rol registrado con este código identificador.'}}
+        }
 
     def get_usuarios_asignados(self, obj):
         return User.objects.filter(rol=obj.codigo, is_active=True).count()
+
+    def validate_codigo(self, value):
+        val = value.strip().upper()
+        if not val:
+            raise serializers.ValidationError('El código del rol es obligatorio.')
+        instance = getattr(self, 'instance', None)
+        qs = Rol.objects.filter(codigo__iexact=val)
+        if instance:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('Ya existe un rol registrado con este código identificador.')
+        return val
+
+    def validate_nombre(self, value):
+        val = value.strip()
+        if not val:
+            raise serializers.ValidationError('El nombre del rol es obligatorio.')
+        instance = getattr(self, 'instance', None)
+        qs = Rol.objects.filter(nombre__iexact=val)
+        if instance:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('Ya existe un rol registrado con este nombre.')
+        return val
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -127,6 +154,11 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name', 'rol', 'rol_display', 'dpi', 'nit', 'telefono', 'direccion', 'is_active', 'debe_cambiar_password', 'date_joined')
         read_only_fields = ('id', 'date_joined')
+        extra_kwargs = {
+            'dpi': {'error_messages': {'unique': 'Ya existe un empleado registrado con este número de DPI.'}},
+            'username': {'error_messages': {'unique': 'Ya existe un usuario con este nombre de usuario.'}},
+            'email': {'error_messages': {'unique': 'Ya existe un usuario con este correo electrónico.'}},
+        }
 
 class UserAdminSerializer(serializers.ModelSerializer):
     rol_display = serializers.CharField(source='get_rol_display', read_only=True)
@@ -137,6 +169,11 @@ class UserAdminSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'email', 'password', 'first_name', 'last_name', 'rol', 'rol_display', 'dpi', 'nit', 'telefono', 'direccion', 'is_active', 'debe_cambiar_password', 'date_joined', 'contrasena_generada')
         read_only_fields = ('id', 'username', 'date_joined', 'contrasena_generada')
+        extra_kwargs = {
+            'dpi': {'error_messages': {'unique': 'Ya existe un empleado registrado con este número de DPI.'}},
+            'username': {'error_messages': {'unique': 'Ya existe un empleado registrado con este nombre de usuario.'}},
+            'email': {'error_messages': {'unique': 'Ya existe un empleado registrado con este correo electrónico.'}},
+        }
 
     def validate(self, attrs):
         # Validar Nombres y Apellidos Obligatorios
@@ -161,12 +198,40 @@ class UserAdminSerializer(serializers.ModelSerializer):
             })
 
         # Validar DPI (Obligatorio al crear nuevo empleado; opcional en edición si no se cambia)
-        if not self.instance:
-            dpi = attrs.get('dpi', '').strip()
-            if not dpi:
-                raise serializers.ValidationError({'dpi': 'El DPI del empleado es obligatorio.'})
+        dpi = attrs.get('dpi', getattr(self.instance, 'dpi', '') or '')
+        if dpi:
+            dpi = str(dpi).strip()
             if len(dpi) != 13 or not dpi.isdigit():
                 raise serializers.ValidationError({'dpi': 'El DPI debe contener exactamente 13 dígitos numéricos.'})
+            existing_dpi = User.objects.filter(dpi=dpi)
+            if self.instance:
+                existing_dpi = existing_dpi.exclude(pk=self.instance.pk)
+            if existing_dpi.exists():
+                raise serializers.ValidationError({'dpi': 'Ya existe un empleado registrado con este número de DPI.'})
+        elif not self.instance:
+            raise serializers.ValidationError({'dpi': 'El DPI del empleado es obligatorio.'})
+
+        # Validar Correo Electrónico (si se provee)
+        email = attrs.get('email', getattr(self.instance, 'email', '') or '')
+        if email:
+            email = str(email).strip().lower()
+            existing_email = User.objects.filter(email__iexact=email)
+            if self.instance:
+                existing_email = existing_email.exclude(pk=self.instance.pk)
+            if existing_email.exists():
+                raise serializers.ValidationError({'email': 'Ya existe un empleado registrado con este correo electrónico.'})
+
+        # Validar NIT (si se provee)
+        nit = attrs.get('nit', getattr(self.instance, 'nit', '') or '')
+        if nit:
+            nit = str(nit).strip().upper()
+            if nit not in ['S/N', 'SN', 'C/F', 'CF', '']:
+                existing_nit = User.objects.filter(nit__iexact=nit)
+                if self.instance:
+                    existing_nit = existing_nit.exclude(pk=self.instance.pk)
+                if existing_nit.exists():
+                    raise serializers.ValidationError({'nit': 'Ya existe un empleado registrado con este número de NIT.'})
+
         # Validar Teléfono (Opcional, pero si se provee debe contener máximo 8 dígitos numéricos)
         telefono = attrs.get('telefono', '').strip() if attrs.get('telefono') else ''
         if telefono:

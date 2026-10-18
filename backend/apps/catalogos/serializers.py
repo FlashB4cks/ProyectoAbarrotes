@@ -6,11 +6,20 @@ class MarcaSerializer(serializers.ModelSerializer):
         model = Marca
         fields = ('id_marca', 'nombre', 'descripcion', 'is_active', 'fecha_registro')
         read_only_fields = ('id_marca', 'fecha_registro')
+        extra_kwargs = {
+            'nombre': {'error_messages': {'unique': 'Ya existe una marca registrada con este nombre.'}}
+        }
 
     def validate_nombre(self, value):
         val = value.strip()
         if not val:
             raise serializers.ValidationError('El nombre de la marca es obligatorio.')
+        instance = getattr(self, 'instance', None)
+        qs = Marca.objects.filter(nombre__iexact=val)
+        if instance:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('Ya existe una marca registrada con este nombre.')
         return val
 
 
@@ -19,11 +28,20 @@ class CategoriaSerializer(serializers.ModelSerializer):
         model = Categoria
         fields = ('id_categoria', 'nombre', 'descripcion', 'is_active', 'fecha_creacion')
         read_only_fields = ('id_categoria', 'fecha_creacion')
+        extra_kwargs = {
+            'nombre': {'error_messages': {'unique': 'Ya existe una categoría registrada con este nombre.'}}
+        }
 
     def validate_nombre(self, value):
         val = value.strip()
         if not val:
             raise serializers.ValidationError('El nombre de la categoría es obligatorio.')
+        instance = getattr(self, 'instance', None)
+        qs = Categoria.objects.filter(nombre__iexact=val)
+        if instance:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('Ya existe una categoría registrada con este nombre.')
         return val
 
 
@@ -32,11 +50,32 @@ class UnidadMedidaSerializer(serializers.ModelSerializer):
         model = UnidadMedida
         fields = ('id_unidad', 'nombre', 'simbolo', 'is_active')
         read_only_fields = ('id_unidad',)
+        extra_kwargs = {
+            'nombre': {'error_messages': {'unique': 'Ya existe una unidad de medida registrada con este nombre.'}}
+        }
 
     def validate_nombre(self, value):
         val = value.strip()
         if not val:
             raise serializers.ValidationError('El nombre de la unidad de medida es obligatorio.')
+        instance = getattr(self, 'instance', None)
+        qs = UnidadMedida.objects.filter(nombre__iexact=val)
+        if instance:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('Ya existe una unidad de medida registrada con este nombre.')
+        return val
+
+    def validate_simbolo(self, value):
+        val = value.strip()
+        if not val:
+            raise serializers.ValidationError('El símbolo es obligatorio.')
+        instance = getattr(self, 'instance', None)
+        qs = UnidadMedida.objects.filter(simbolo__iexact=val)
+        if instance:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('Ya existe una unidad de medida registrada con este símbolo.')
         return val
 
 
@@ -45,11 +84,21 @@ class ProveedorSerializer(serializers.ModelSerializer):
         model = Proveedor
         fields = ('id_proveedor', 'nombre_empresa', 'contacto', 'telefono', 'email', 'nit', 'direccion', 'is_active', 'fecha_registro')
         read_only_fields = ('id_proveedor', 'fecha_registro')
+        extra_kwargs = {
+            'nombre_empresa': {'error_messages': {'unique': 'Ya existe un proveedor registrado con este nombre o razón social.'}},
+            'nit': {'error_messages': {'unique': 'Ya existe un proveedor registrado con este número de NIT.'}},
+        }
 
     def validate_nombre_empresa(self, value):
         val = value.strip()
         if not val:
             raise serializers.ValidationError('El nombre de la empresa es obligatorio.')
+        instance = getattr(self, 'instance', None)
+        qs = Proveedor.objects.filter(nombre_empresa__iexact=val)
+        if instance:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('Ya existe un proveedor registrado con este nombre o razón social.')
         return val
 
     def validate_telefono(self, value):
@@ -67,6 +116,25 @@ class ProveedorSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('El NIT numérico no puede exceder los 8 dígitos.')
             if len(v) > 9:
                 raise serializers.ValidationError('El NIT no puede exceder los 9 caracteres.')
+            if v not in ['S/N', 'SN', 'C/F', 'CF', '']:
+                instance = getattr(self, 'instance', None)
+                qs = Proveedor.objects.filter(nit__iexact=v)
+                if instance:
+                    qs = qs.exclude(pk=instance.pk)
+                if qs.exists():
+                    raise serializers.ValidationError('Ya existe un proveedor registrado con este número de NIT.')
+            return v
+        return value
+
+    def validate_email(self, value):
+        if value:
+            v = value.strip().lower()
+            instance = getattr(self, 'instance', None)
+            qs = Proveedor.objects.filter(email__iexact=v)
+            if instance:
+                qs = qs.exclude(pk=instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError('Ya existe un proveedor registrado con este correo electrónico.')
             return v
         return value
 
@@ -101,6 +169,9 @@ class ProductoSerializer(serializers.ModelSerializer):
             'fecha_registro'
         )
         read_only_fields = ('id_producto', 'stock_total', 'fecha_registro')
+        extra_kwargs = {
+            'codigo_barras': {'error_messages': {'unique': 'Ya existe un producto registrado con este código de barras.'}}
+        }
 
     def get_es_stock_bajo(self, obj):
         return obj.stock_total <= obj.stock_minimo

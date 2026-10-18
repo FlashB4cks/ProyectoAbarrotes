@@ -29,6 +29,10 @@ class ClienteSerializer(serializers.ModelSerializer):
             'ultima_compra',
         ]
         read_only_fields = ['id_cliente', 'fecha_registro']
+        extra_kwargs = {
+            'nit': {'error_messages': {'unique': 'Ya existe un cliente registrado con este número de NIT.'}},
+            'dpi': {'error_messages': {'unique': 'Ya existe un cliente registrado con este número de DPI.'}},
+        }
 
     def get_total_compras(self, obj):
         if hasattr(obj, 'ventas_count'):
@@ -60,8 +64,30 @@ class ClienteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("El NIT numérico no puede exceder los 8 dígitos.")
             if len(v) > 9:
                 raise serializers.ValidationError("El NIT no puede exceder los 9 caracteres.")
+            
+            # Validar unicidad de NIT omitiendo C/F y S/N
+            if v not in ['S/N', 'SN', 'C/F', 'CF', '']:
+                qs = Cliente.objects.filter(nit__iexact=v)
+                if instance:
+                    qs = qs.exclude(pk=instance.pk)
+                if qs.exists():
+                    raise serializers.ValidationError("Ya existe un cliente registrado con este número de NIT.")
             return v
         return 'S/N'
+
+    def validate_dpi(self, value):
+        if value:
+            v = value.strip()
+            if not v.isdigit() or len(v) != 13:
+                raise serializers.ValidationError("El DPI debe contener exactamente 13 dígitos numéricos.")
+            instance = getattr(self, 'instance', None)
+            qs = Cliente.objects.filter(dpi=v)
+            if instance:
+                qs = qs.exclude(pk=instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError("Ya existe un cliente registrado con este número de DPI.")
+            return v
+        return None
 
     def validate_telefono(self, value):
         if value:

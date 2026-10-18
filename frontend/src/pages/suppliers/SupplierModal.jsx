@@ -95,7 +95,14 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
       });
       onClose();
     } catch (err) {
-      setErrors({ form: err.message || 'Error al guardar el proveedor.' });
+      const errMap = { form: err.message || 'Error al guardar el proveedor.' };
+      if (err.details && typeof err.details === 'object') {
+        if (err.details.nombre_empresa) errMap.nombre_empresa = Array.isArray(err.details.nombre_empresa) ? err.details.nombre_empresa[0] : err.details.nombre_empresa;
+        if (err.details.nit) errMap.nit = Array.isArray(err.details.nit) ? err.details.nit[0] : err.details.nit;
+        if (err.details.email) errMap.email = Array.isArray(err.details.email) ? err.details.email[0] : err.details.email;
+        if (err.details.telefono) errMap.telefono = Array.isArray(err.details.telefono) ? err.details.telefono[0] : err.details.telefono;
+      }
+      setErrors(errMap);
     } finally {
       setSubmitting(false);
     }

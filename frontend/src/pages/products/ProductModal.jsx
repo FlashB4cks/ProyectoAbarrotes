@@ -20,6 +20,7 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
   });
 
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const [isQuickSupplierOpen, setIsQuickSupplierOpen] = useState(false);
 
   const handleQuickSupplierSave = async (supplierData) => {
@@ -91,18 +92,32 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    onSave({
-      ...formData,
-      precio_venta: parseFloat(formData.precio_venta),
-      stock_minimo: parseInt(formData.stock_minimo),
-      categoria: parseInt(formData.categoria),
-      marca: formData.marca ? parseInt(formData.marca) : null,
-      unidad_medida: formData.unidad_medida ? parseInt(formData.unidad_medida) : null,
-      proveedor: formData.proveedor ? parseInt(formData.proveedor) : null,
-    });
+    try {
+      setSubmitting(true);
+      await onSave({
+        ...formData,
+        precio_venta: parseFloat(formData.precio_venta),
+        stock_minimo: parseInt(formData.stock_minimo),
+        categoria: parseInt(formData.categoria),
+        marca: formData.marca ? parseInt(formData.marca) : null,
+        unidad_medida: formData.unidad_medida ? parseInt(formData.unidad_medida) : null,
+        proveedor: formData.proveedor ? parseInt(formData.proveedor) : null,
+      });
+    } catch (err) {
+      const errMap = { form: err.message || 'Error al guardar el producto.' };
+      if (err.details && typeof err.details === 'object') {
+        if (err.details.codigo_barras) errMap.codigo_barras = Array.isArray(err.details.codigo_barras) ? err.details.codigo_barras[0] : err.details.codigo_barras;
+        if (err.details.nombre) errMap.nombre = Array.isArray(err.details.nombre) ? err.details.nombre[0] : err.details.nombre;
+        if (err.details.precio_venta) errMap.precio_venta = Array.isArray(err.details.precio_venta) ? err.details.precio_venta[0] : err.details.precio_venta;
+        if (err.details.stock_minimo) errMap.stock_minimo = Array.isArray(err.details.stock_minimo) ? err.details.stock_minimo[0] : err.details.stock_minimo;
+      }
+      setErrors(errMap);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -114,6 +129,11 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
         </div>
 
         <form onSubmit={handleSubmit} className="modal-body">
+          {errors.form && (
+            <div className="alert-box alert-error" style={{ marginBottom: '14px', gridColumn: 'span 2' }}>
+              {errors.form}
+            </div>
+          )}
           <div className="form-grid">
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '6px' }}>
@@ -260,8 +280,10 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
           </div>
 
           <div className="modal-footer" style={{ marginTop: '24px' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn btn-primary">{editingProduct ? 'Guardar Cambios' : 'Guardar Producto'}</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>Cancelar</button>
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Guardando...' : (editingProduct ? 'Guardar Cambios' : 'Guardar Producto')}
+            </button>
           </div>
         </form>
 

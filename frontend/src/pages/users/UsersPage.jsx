@@ -148,6 +148,7 @@ export const UsersPage = () => {
       fetchData();
     } catch (err) {
       setToast({ type: 'error', message: err.message });
+      throw err;
     }
   };
 
@@ -194,6 +195,7 @@ export const UsersPage = () => {
       fetchData();
     } catch (err) {
       setToast({ type: 'error', message: err.message });
+      throw err;
     }
   };
 

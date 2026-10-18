@@ -97,7 +97,14 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
       });
       onClose();
     } catch (err) {
-      setErrors({ submit: err.message || 'Error al guardar cliente.' });
+      const errMap = { submit: err.message || 'Error al guardar cliente.' };
+      if (err.details && typeof err.details === 'object') {
+        if (err.details.dpi) errMap.dpi = Array.isArray(err.details.dpi) ? err.details.dpi[0] : err.details.dpi;
+        if (err.details.nit) errMap.nit = Array.isArray(err.details.nit) ? err.details.nit[0] : err.details.nit;
+        if (err.details.nombre_completo) errMap.nombre_completo = Array.isArray(err.details.nombre_completo) ? err.details.nombre_completo[0] : err.details.nombre_completo;
+        if (err.details.telefono) errMap.telefono = Array.isArray(err.details.telefono) ? err.details.telefono[0] : err.details.telefono;
+      }
+      setErrors(errMap);
     } finally {
       setSubmitting(false);
     }

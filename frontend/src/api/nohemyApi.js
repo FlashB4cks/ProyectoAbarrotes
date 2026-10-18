@@ -78,7 +78,11 @@ class NohemyApi {
         const strVals = flatVals.filter(v => typeof v === 'string' && v.trim());
         errorMsg = strVals.length > 0 ? strVals.join(', ') : 'Error en la solicitud';
       }
-      throw new Error(errorMsg || 'Error en la solicitud');
+      const error = new Error(errorMsg || 'Error en la solicitud');
+      error.status = response.status;
+      error.data = data;
+      error.details = data.details || (typeof data === 'object' ? data : {});
+      throw error;
     }
 
     return data;

@@ -198,6 +198,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
       fetchData();
     } catch (err) {
       setToast({ type: 'error', message: err.message });
+      throw err;
     }
   };
 
@@ -227,6 +228,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
       fetchData();
     } catch (err) {
       setToast({ type: 'error', message: err.message });
+      throw err;
     }
   };
 
@@ -256,6 +258,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
       fetchData();
     } catch (err) {
       setToast({ type: 'error', message: err.message });
+      throw err;
     }
   };
 
@@ -285,6 +288,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
       fetchData();
     } catch (err) {
       setToast({ type: 'error', message: err.message });
+      throw err;
     }
   };
 

@@ -9,6 +9,7 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
     permisos: ''
   });
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (editingRol) {
@@ -29,7 +30,7 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
+    if (errors[name] || errors.form) setErrors(prev => ({ ...prev, [name]: null, form: null }));
   };
 
   const validate = () => {
@@ -40,15 +41,28 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    onSave({
-      codigo: formData.codigo.trim().toUpperCase(),
-      nombre: formData.nombre.trim(),
-      descripcion: formData.descripcion.trim(),
-      permisos: formData.permisos.trim()
-    });
+    try {
+      setSubmitting(true);
+      await onSave({
+        codigo: formData.codigo.trim().toUpperCase(),
+        nombre: formData.nombre.trim(),
+        descripcion: formData.descripcion.trim(),
+        permisos: formData.permisos.trim()
+      });
+      onClose();
+    } catch (err) {
+      const errMap = { form: err.message || 'Error al guardar el rol.' };
+      if (err.details && typeof err.details === 'object') {
+        if (err.details.codigo) errMap.codigo = Array.isArray(err.details.codigo) ? err.details.codigo[0] : err.details.codigo;
+        if (err.details.nombre) errMap.nombre = Array.isArray(err.details.nombre) ? err.details.nombre[0] : err.details.nombre;
+      }
+      setErrors(errMap);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -59,6 +73,11 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
           <button className="btn-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="modal-body">
+          {errors.form && (
+            <div className="alert-box alert-error" style={{ marginBottom: '14px' }}>
+              {errors.form}
+            </div>
+          )}
           <div className="form-group" style={{ marginBottom: '14px' }}>
             <label>Código Identificador <span className="req">*</span></label>
             <input 
@@ -66,10 +85,11 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
               name="codigo" 
               value={formData.codigo} 
               onChange={handleChange} 
-              placeholder="Ej. SUPERVISOR, CAJERO..."
+              placeholder="SUPERVISOR, CAJERO..."
               disabled={Boolean(editingRol)}
               className={errors.codigo ? 'input-error' : ''}
               style={{ textTransform: 'uppercase' }}
+              autoFocus={!editingRol}
             />
             {errors.codigo && <span className="error-text">{errors.codigo}</span>}
           </div>
@@ -80,8 +100,9 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
               name="nombre" 
               value={formData.nombre} 
               onChange={handleChange} 
-              placeholder="Ej. Supervisor de Sucursal"
+              placeholder="Supervisor de Sucursal"
               className={errors.nombre ? 'input-error' : ''}
+              autoFocus={Boolean(editingRol)}
             />
             {errors.nombre && <span className="error-text">{errors.nombre}</span>}
           </div>
@@ -103,18 +124,19 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
               name="permisos" 
               value={formData.permisos} 
               onChange={handleChange} 
-              placeholder="Ej. POS, Ventas, Reportes, Cierre de Caja"
+              placeholder="POS, Ventas, Reportes, Cierre de Caja"
             />
           </div>
           <div className="modal-footer" style={{ marginTop: '20px' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn btn-primary">{editingRol ? 'Guardar Cambios' : 'Crear Rol'}</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>Cancelar</button>
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Guardando...' : (editingRol ? 'Guardar Cambios' : 'Crear Rol')}
+            </button>
           </div>
         </form>
       </div>
     </div>
   );
 };
-
 
 export default RolModal;

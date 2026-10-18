@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 export const MarcaModal = ({ isOpen, onClose, onSave, editingMarca }) => {
   const [formData, setFormData] = useState({ nombre: '', descripcion: '' });
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (editingMarca) {
@@ -22,7 +23,7 @@ export const MarcaModal = ({ isOpen, onClose, onSave, editingMarca }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
+    if (errors[name] || errors.form) setErrors(prev => ({ ...prev, [name]: null, form: null }));
   };
 
   const validate = () => {
@@ -32,13 +33,25 @@ export const MarcaModal = ({ isOpen, onClose, onSave, editingMarca }) => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    onSave({
-      nombre: formData.nombre.trim(),
-      descripcion: formData.descripcion.trim(),
-    });
+    try {
+      setSubmitting(true);
+      await onSave({
+        nombre: formData.nombre.trim(),
+        descripcion: formData.descripcion.trim(),
+      });
+      onClose();
+    } catch (err) {
+      const errMap = { form: err.message || 'Error al guardar la marca.' };
+      if (err.details && typeof err.details === 'object') {
+        if (err.details.nombre) errMap.nombre = Array.isArray(err.details.nombre) ? err.details.nombre[0] : err.details.nombre;
+      }
+      setErrors(errMap);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -49,6 +62,11 @@ export const MarcaModal = ({ isOpen, onClose, onSave, editingMarca }) => {
           <button className="btn-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="modal-body">
+          {errors.form && (
+            <div className="alert-box alert-error" style={{ marginBottom: '14px' }}>
+              {errors.form}
+            </div>
+          )}
           <div className="form-group" style={{ marginBottom: '14px' }}>
             <label>Nombre de la Marca <span className="req">*</span></label>
             <input 
@@ -56,8 +74,9 @@ export const MarcaModal = ({ isOpen, onClose, onSave, editingMarca }) => {
               name="nombre" 
               value={formData.nombre} 
               onChange={handleChange} 
-              placeholder="Ej. Coca-Cola, Bimbo, Malher..."
+              placeholder="Coca-Cola, Bimbo, Malher..."
               className={errors.nombre ? 'input-error' : ''}
+              autoFocus
             />
             {errors.nombre && <span className="error-text">{errors.nombre}</span>}
           </div>
@@ -73,14 +92,15 @@ export const MarcaModal = ({ isOpen, onClose, onSave, editingMarca }) => {
             />
           </div>
           <div className="modal-footer" style={{ marginTop: '20px' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn btn-primary">{editingMarca ? 'Guardar Cambios' : 'Registrar Marca'}</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>Cancelar</button>
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Guardando...' : (editingMarca ? 'Guardar Cambios' : 'Registrar Marca')}
+            </button>
           </div>
         </form>
       </div>
     </div>
   );
 };
-
 
 export default MarcaModal;
