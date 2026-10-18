@@ -4,8 +4,6 @@ import { Toast, ConfirmModal } from '../../components/common';
 
 import NewPurchaseModal from './NewPurchaseModal';
 import PurchaseDetailModal from './PurchaseDetailModal';
-import SupplierModal from '../suppliers/SupplierModal';
-import { SuppliersContent } from '../suppliers/SuppliersPage';
 /* ── COMPONENTE: GESTIÓN DE COMPRAS E INVENTARIO ── */
 export const PurchasesPage = () => {
   const [activeSubTab, setActiveSubTab] = useState('compras'); // 'compras' | 'lotes'
@@ -131,7 +129,7 @@ export const PurchasesPage = () => {
 
   return (
     <div className="view-panel">
-      {/* Pestañas secundarias: Compras vs Lotes vs Proveedores */}
+      {/* Pestañas secundarias: Compras vs Lotes */}
       <div className="tab-pill-group">
         <button 
           className={`tab-pill ${activeSubTab === 'compras' ? 'active' : ''}`}
@@ -144,12 +142,6 @@ export const PurchasesPage = () => {
           onClick={() => setActiveSubTab('lotes')}
         >
           Lotes de Inventario y Vencimiento ({lotes.length})
-        </button>
-        <button 
-          className={`tab-pill ${activeSubTab === 'proveedores' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('proveedores')}
-        >
-          Directorio de Proveedores ({proveedores.length})
         </button>
       </div>
 
@@ -387,10 +379,6 @@ export const PurchasesPage = () => {
             </table>
           </div>
         </div>
-      )}
-
-      {activeSubTab === 'proveedores' && (
-        <SuppliersContent onSupplierChanged={fetchData} />
       )}
 
       {/* Modal para Registrar Nueva Compra */}
