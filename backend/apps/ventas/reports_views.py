@@ -19,9 +19,10 @@ def parse_date_range(request):
     fecha_inicio, fecha_fin: 'YYYY-MM-DD'
     """
     hoy = timezone.localdate()
-    periodo = request.query_params.get('periodo', 'mes').lower()
-    fecha_inicio_str = request.query_params.get('fecha_inicio', None)
-    fecha_fin_str = request.query_params.get('fecha_fin', None)
+    params = getattr(request, 'query_params', request.GET)
+    periodo = params.get('periodo', 'mes').lower()
+    fecha_inicio_str = params.get('fecha_inicio', None)
+    fecha_fin_str = params.get('fecha_fin', None)
 
     if periodo == 'hoy':
         inicio = hoy
@@ -76,7 +77,7 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
         # Costo de Ventas (COGS) calculado a partir de las salidas FIFO de lotes
         salidas_qs = SalidaLoteVenta.objects.filter(
             detalle_venta__venta__in=ventas_qs
-        ).select_related('lote')
+        ).select_related('lote', 'detalle_venta__venta')
 
         total_costo = sum(
             (s.cantidad_descontada * s.lote.costo_unitario for s in salidas_qs),
@@ -152,24 +153,87 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
                 'ganancia': float(ganancia_p),
             })
 
-        # Flujo Temporal para Gráfico (Día por Día)
+        # Flujo Temporal Adaptativo para Gráficas de Inteligencia de Negocios (RF-07.2)
         flujo_temporal = []
-        curr = inicio
         dias_es = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-        while curr <= fin:
-            ventas_dia = [v for v in ventas_qs if v.fecha_hora.date() == curr]
-            total_dia = sum((v.total for v in ventas_dia), Decimal('0.00'))
-            salidas_dia = [s for s in salidas_qs if s.detalle_venta.venta.fecha_hora.date() == curr]
-            costo_dia = sum((s.cantidad_descontada * s.lote.costo_unitario for s in salidas_dia), Decimal('0.00'))
-            flujo_temporal.append({
-                'fecha': str(curr),
-                'dia_label': f"{dias_es[curr.weekday()]} {curr.day}",
-                'ventas': float(total_dia),
-                'costo': float(costo_dia),
-                'utilidad': float(total_dia - costo_dia),
-                'transacciones': len(ventas_dia)
-            })
-            curr += timedelta(days=1)
+        meses_es = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+        if periodo == 'hoy':
+            # Vista Intradiaria por Horas Comerciales (07:00 a 21:00)
+            for h in range(7, 22):
+                hora_str = f"{h:02d}:00"
+                ventas_h = [v for v in ventas_qs if timezone.localtime(v.fecha_hora).hour == h]
+                total_h = sum((v.total for v in ventas_h), Decimal('0.00'))
+                salidas_h = [s for s in salidas_qs if timezone.localtime(s.detalle_venta.venta.fecha_hora).hour == h]
+                costo_h = sum((s.cantidad_descontada * s.lote.costo_unitario for s in salidas_h), Decimal('0.00'))
+                flujo_temporal.append({
+                    'fecha': f"{inicio} {hora_str}",
+                    'dia_label': hora_str,
+                    'ventas': float(total_h),
+                    'costo': float(costo_h),
+                    'utilidad': float(total_h - costo_h),
+                    'transacciones': len(ventas_h)
+                })
+
+        elif periodo == 'anio':
+            # Vista Anual: Agrupación por Mes (Ene a Dic)
+            anio_actual = inicio.year
+            for m in range(1, 13):
+                ventas_m = [v for v in ventas_qs if v.fecha_hora.year == anio_actual and v.fecha_hora.month == m]
+                total_m = sum((v.total for v in ventas_m), Decimal('0.00'))
+                salidas_m = [s for s in salidas_qs if s.detalle_venta.venta.fecha_hora.year == anio_actual and s.detalle_venta.venta.fecha_hora.month == m]
+                costo_m = sum((s.cantidad_descontada * s.lote.costo_unitario for s in salidas_m), Decimal('0.00'))
+                flujo_temporal.append({
+                    'fecha': f"{anio_actual}-{m:02d}",
+                    'dia_label': meses_es[m - 1],
+                    'ventas': float(total_m),
+                    'costo': float(costo_m),
+                    'utilidad': float(total_m - costo_m),
+                    'transacciones': len(ventas_m)
+                })
+
+        elif periodo == 'todo':
+            # Vista Histórica Completa: Agrupación por Mes/Año
+            curr = inicio.replace(day=1)
+            fin_mes = fin.replace(day=1)
+            while curr <= fin_mes:
+                y = curr.year
+                m = curr.month
+                ventas_m = [v for v in ventas_qs if v.fecha_hora.year == y and v.fecha_hora.month == m]
+                total_m = sum((v.total for v in ventas_m), Decimal('0.00'))
+                salidas_m = [s for s in salidas_qs if s.detalle_venta.venta.fecha_hora.year == y and s.detalle_venta.venta.fecha_hora.month == m]
+                costo_m = sum((s.cantidad_descontada * s.lote.costo_unitario for s in salidas_m), Decimal('0.00'))
+                flujo_temporal.append({
+                    'fecha': f"{y}-{m:02d}",
+                    'dia_label': f"{meses_es[m - 1]} '{str(y)[2:]}",
+                    'ventas': float(total_m),
+                    'costo': float(costo_m),
+                    'utilidad': float(total_m - costo_m),
+                    'transacciones': len(ventas_m)
+                })
+                if m == 12:
+                    curr = curr.replace(year=y + 1, month=1)
+                else:
+                    curr = curr.replace(month=m + 1)
+
+        else:
+            # Vista Diaria: 'semana', 'mes', 'personalizado'
+            curr = inicio
+            while curr <= fin:
+                ventas_dia = [v for v in ventas_qs if v.fecha_hora.date() == curr]
+                total_dia = sum((v.total for v in ventas_dia), Decimal('0.00'))
+                salidas_dia = [s for s in salidas_qs if s.detalle_venta.venta.fecha_hora.date() == curr]
+                costo_dia = sum((s.cantidad_descontada * s.lote.costo_unitario for s in salidas_dia), Decimal('0.00'))
+                label = f"{dias_es[curr.weekday()]} {curr.day}" if periodo == 'semana' else f"{dias_es[curr.weekday()][:1]} {curr.day}"
+                flujo_temporal.append({
+                    'fecha': str(curr),
+                    'dia_label': label,
+                    'ventas': float(total_dia),
+                    'costo': float(costo_dia),
+                    'utilidad': float(total_dia - costo_dia),
+                    'transacciones': len(ventas_dia)
+                })
+                curr += timedelta(days=1)
 
         # Mermas Registradas en el período
         mermas_qs = AjusteInventario.objects.filter(

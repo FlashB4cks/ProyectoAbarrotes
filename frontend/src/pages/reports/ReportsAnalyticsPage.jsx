@@ -11,6 +11,7 @@ export const ReportsAnalyticsPage = () => {
   const [financieroData, setFinancieroData] = useState(null);
   const [fifoData, setFifoData] = useState(null);
   const [toast, setToast] = useState(null);
+  const [hoveredData, setHoveredData] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -42,8 +43,17 @@ export const ReportsAnalyticsPage = () => {
   const pagos = financieroData?.desglose_pagos || [];
   const historialFifo = fifoData?.historial_salidas_fifo || [];
 
-  // Calcular escala máxima para gráfico SVG
+  // Calcular métricas y escalas para el gráfico
   const maxVenta = Math.max(...flujo.map(f => f.ventas || 0), 10);
+  const puntoPico = flujo.reduce((max, f) => (f.ventas > max.ventas ? f : max), { ventas: 0, dia_label: '-' });
+
+  const periodoSubtitulos = {
+    hoy: 'Ventas por Hora Comercial (Hoy)',
+    semana: 'Ventas Diarias (Últimos 7 Días)',
+    mes: 'Ventas Diarias (Este Mes)',
+    anio: 'Ventas Mensuales (Año en Curso)',
+    todo: 'Evolución Histórica por Período Mensual',
+  };
 
   return (
     <div className="page-container" style={{ padding: '24px' }}>
@@ -175,94 +185,207 @@ export const ReportsAnalyticsPage = () => {
             </div>
           </div>
 
-          {/* Gráfico de Tendencia Temporal SVG */}
+          {/* Gráfico de Tendencia Temporal Inteligente y Adaptativo */}
           <div className="report-panel" style={{ marginBottom: '24px' }}>
-            <div className="report-panel-header">
-              <span className="report-panel-title">
-                <IconTrendingUp size={16} />
-                <span>Flujo de Ventas en el Período ({financieroData?.periodo?.fecha_inicio} al {financieroData?.periodo?.fecha_fin})</span>
-              </span>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Total acumulado: <strong style={{ color: 'var(--accent)' }}>Q {parseFloat(kpis.total_ventas || 0).toFixed(2)}</strong>
-              </span>
+            <div className="report-panel-header" style={{ flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="report-panel-title">
+                  <IconTrendingUp size={16} />
+                  <span>{periodoSubtitulos[periodo] || 'Flujo de Ventas'}</span>
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  ({financieroData?.periodo?.fecha_inicio} al {financieroData?.periodo?.fecha_fin})
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', fontSize: '12px' }}>
+                {puntoPico.ventas > 0 && (
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    Pico: <strong style={{ color: '#b8860b' }}>Q {puntoPico.ventas.toFixed(2)}</strong> ({puntoPico.dia_label})
+                  </span>
+                )}
+                <span style={{ color: 'var(--text-muted)' }}>
+                  Total: <strong style={{ color: 'var(--accent)' }}>Q {parseFloat(kpis.total_ventas || 0).toFixed(2)}</strong>
+                </span>
+              </div>
             </div>
-            <div className="report-panel-body">
+
+            <div className="report-panel-body" style={{ padding: '20px 16px 14px' }}>
               {flujo.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
                   No hay transacciones registradas en este período.
                 </div>
               ) : (
-                <div className="chart-svg-container">
-                  <svg width="100%" height="160" viewBox={`0 0 ${Math.max(flujo.length * 50, 400)} 160`} preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="chartGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.02" />
-                      </linearGradient>
-                    </defs>
+                <div style={{ position: 'relative', width: '100%', userSelect: 'none' }}>
+                  {/* Tooltip flotante al interactuar con cualquier barra */}
+                  {hoveredData && (
+                    <div 
+                      className="no-print"
+                      style={{
+                        position: 'absolute',
+                        top: '-10px',
+                        right: '10px',
+                        background: 'rgba(24, 24, 27, 0.94)',
+                        color: '#ffffff',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: '11.5px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                        zIndex: 20,
+                        display: 'flex',
+                        gap: '12px',
+                        alignItems: 'center',
+                        pointerEvents: 'none',
+                        backdropFilter: 'blur(4px)',
+                        border: '1px solid rgba(255,255,255,0.12)'
+                      }}
+                    >
+                      <span style={{ color: '#fbbf24', fontWeight: 800 }}>
+                        {hoveredData.dia_label} ({hoveredData.fecha})
+                      </span>
+                      <span style={{ borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '8px' }}>
+                        Venta: <strong>Q {hoveredData.ventas.toFixed(2)}</strong>
+                      </span>
+                      <span style={{ borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '8px', color: '#34d399' }}>
+                        Utilidad: <strong>Q {hoveredData.utilidad.toFixed(2)}</strong>
+                      </span>
+                      <span style={{ borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '8px', color: '#93c5fd' }}>
+                        {hoveredData.transacciones} {hoveredData.transacciones === 1 ? 'factura' : 'facturas'}
+                      </span>
+                    </div>
+                  )}
 
-                    {/* Líneas horizontales de guía */}
-                    <line x1="0" y1="30" x2="100%" y2="30" stroke="rgba(0,0,0,0.05)" strokeDasharray="3 3" />
-                    <line x1="0" y1="80" x2="100%" y2="80" stroke="rgba(0,0,0,0.05)" strokeDasharray="3 3" />
-                    <line x1="0" y1="130" x2="100%" y2="130" stroke="rgba(0,0,0,0.1)" strokeWidth="1" />
+                  {/* Contenedor principal: Eje Y + Barras */}
+                  <div style={{ display: 'flex', height: '180px', position: 'relative' }}>
+                    {/* Eje Y de Referencia */}
+                    <div style={{
+                      width: '45px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: 'var(--text-muted)',
+                      paddingBottom: '28px',
+                      textAlign: 'right',
+                      paddingRight: '8px',
+                      opacity: 0.85
+                    }}>
+                      <span>Q{Math.ceil(maxVenta)}</span>
+                      <span>Q{Math.ceil(maxVenta / 2)}</span>
+                      <span>Q0</span>
+                    </div>
 
-                    {/* Barras y Puntos de Datos */}
-                    {flujo.map((d, idx) => {
-                      const totalWidth = Math.max(flujo.length * 50, 400);
-                      const colWidth = totalWidth / flujo.length;
-                      const x = (idx * colWidth) + (colWidth / 2);
-                      const barH = maxVenta > 0 ? (d.ventas / maxVenta) * 100 : 0;
-                      const y = 130 - barH;
+                    {/* Área de Gráfico */}
+                    <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'flex-end', paddingBottom: '26px' }}>
+                      {/* Líneas Horizontales Guía */}
+                      <div style={{ position: 'absolute', left: 0, right: 0, top: '6px', borderTop: '1px dashed rgba(0,0,0,0.06)' }} />
+                      <div style={{ position: 'absolute', left: 0, right: 0, top: 'calc(50% - 13px)', borderTop: '1px dashed rgba(0,0,0,0.06)' }} />
+                      <div style={{ position: 'absolute', left: 0, right: 0, bottom: '26px', borderTop: '1px solid var(--border-color)' }} />
 
-                      return (
-                        <g key={d.fecha}>
-                          {/* Barra estilizada */}
-                          {d.ventas > 0 && (
-                            <rect
-                              x={x - 12}
-                              y={y}
-                              width="24"
-                              height={barH}
-                              rx="4"
-                              fill="url(#chartGrad)"
-                              stroke="var(--accent)"
-                              strokeWidth="1.5"
-                            />
-                          )}
-                          {/* Punto indicador */}
-                          <circle
-                            cx={x}
-                            cy={y}
-                            r={d.ventas > 0 ? 3.5 : 2}
-                            fill={d.ventas > 0 ? 'var(--accent)' : 'rgba(0,0,0,0.2)'}
-                          />
-                          {/* Monto sobre la barra */}
-                          {d.ventas > 0 && (
-                            <text
-                              x={x}
-                              y={y - 6}
-                              textAnchor="middle"
-                              fill="var(--accent)"
-                              fontSize="10"
-                              fontWeight="700"
+                      {/* Contenedor de Columnas de Datos */}
+                      <div style={{
+                        display: 'flex',
+                        width: '100%',
+                        height: '100%',
+                        alignItems: 'flex-end',
+                        justifyContent: 'space-around',
+                        gap: flujo.length <= 12 ? '10px' : (flujo.length <= 20 ? '4px' : '2px'),
+                      }}>
+                        {flujo.map((d, idx) => {
+                          const barHPercent = maxVenta > 0 ? (d.ventas / maxVenta) * 100 : 0;
+                          const isPico = d.ventas > 0 && d.ventas === puntoPico.ventas;
+                          const isHovered = hoveredData && hoveredData.fecha === d.fecha;
+
+                          // Lógica de visibilidad de etiquetas para evitar superposiciones
+                          let showLabel = true;
+                          if (flujo.length > 20) {
+                            showLabel = idx % 2 === 0 || d.ventas > 0;
+                          }
+
+                          return (
+                            <div
+                              key={d.fecha}
+                              onMouseEnter={() => setHoveredData(d)}
+                              onMouseLeave={() => setHoveredData(null)}
+                              style={{
+                                flex: 1,
+                                maxWidth: flujo.length <= 12 ? '46px' : (flujo.length <= 18 ? '32px' : '20px'),
+                                minWidth: '4px',
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'flex-end',
+                                alignItems: 'center',
+                                position: 'relative',
+                                cursor: 'pointer',
+                              }}
                             >
-                              Q{d.ventas.toFixed(0)}
-                            </text>
-                          )}
-                          {/* Etiqueta del día abajo */}
-                          <text
-                            x={x}
-                            y="148"
-                            textAnchor="middle"
-                            fill="var(--text-muted)"
-                            fontSize="10"
-                          >
-                            {d.dia_label}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </svg>
+                              {/* Monto sobre la barra */}
+                              {d.ventas > 0 && (
+                                <span
+                                  style={{
+                                    position: 'absolute',
+                                    bottom: `calc(${Math.max(barHPercent, 8)}% + 4px)`,
+                                    fontSize: flujo.length > 20 ? '9px' : '10.5px',
+                                    fontWeight: 800,
+                                    color: isPico ? '#b8860b' : 'var(--text-main)',
+                                    whiteSpace: 'nowrap',
+                                    transform: isHovered ? 'scale(1.15) translateY(-2px)' : 'none',
+                                    transition: 'all 0.15s ease',
+                                    zIndex: isHovered ? 10 : 2,
+                                    background: isHovered ? 'var(--card-bg)' : 'transparent',
+                                    padding: isHovered ? '1px 3px' : '0',
+                                    borderRadius: '3px',
+                                  }}
+                                >
+                                  Q{Math.round(d.ventas)}
+                                </span>
+                              )}
+
+                              {/* Barra física con gradiente */}
+                              <div
+                                style={{
+                                  width: '100%',
+                                  height: `${Math.max(barHPercent, d.ventas > 0 ? 8 : 2)}%`,
+                                  background: d.ventas > 0
+                                    ? isHovered
+                                      ? 'linear-gradient(180deg, #d97706 0%, #b8860b 100%)'
+                                      : isPico
+                                      ? 'linear-gradient(180deg, #f59e0b 0%, #b8860b 100%)'
+                                      : 'linear-gradient(180deg, var(--accent) 0%, rgba(184, 134, 11, 0.4) 100%)'
+                                    : 'rgba(0, 0, 0, 0.05)',
+                                  borderRadius: '5px 5px 2px 2px',
+                                  border: d.ventas > 0 ? '1px solid var(--accent)' : 'none',
+                                  boxShadow: isHovered || isPico ? '0 2px 10px rgba(184, 134, 11, 0.35)' : 'none',
+                                  transition: 'height 0.25s ease, transform 0.15s ease',
+                                  transform: isHovered ? 'scaleY(1.02)' : 'none',
+                                  transformOrigin: 'bottom',
+                                }}
+                              />
+
+                              {/* Etiqueta X debajo de la barra */}
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  bottom: '-22px',
+                                  fontSize: flujo.length > 20 ? '9px' : '10.5px',
+                                  fontWeight: d.ventas > 0 ? 700 : 500,
+                                  color: d.ventas > 0 ? 'var(--text-main)' : 'var(--text-muted)',
+                                  whiteSpace: 'nowrap',
+                                  opacity: showLabel ? 1 : 0,
+                                  pointerEvents: 'none',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                {d.dia_label}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
