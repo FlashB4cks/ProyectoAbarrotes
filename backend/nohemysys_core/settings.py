@@ -1,5 +1,6 @@
 import sys
 import os
+import urllib.parse
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -68,22 +69,48 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'nohemysys_core.wsgi.application'
 
-DB_NAME = os.getenv('DB_NAME', 'nohemysys_db')
-DB_USER = os.getenv('DB_USER', 'postgres')
-DB_PASSWORD = os.getenv('DB_PASSWORD', 'postgres')
-DB_HOST = os.getenv('DB_HOST', '127.0.0.1')
-DB_PORT = '' if DB_HOST.startswith('/') else os.getenv('DB_PORT', '5432')
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': DB_NAME,
-        'USER': DB_USER,
-        'PASSWORD': DB_PASSWORD,
-        'HOST': DB_HOST,
-        'PORT': DB_PORT,
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    _url = urllib.parse.urlparse(DATABASE_URL)
+    _query_params = urllib.parse.parse_qs(_url.query)
+    _ssl_mode = _query_params.get('sslmode', [os.getenv('DB_SSLMODE', 'require')])[0]
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': urllib.parse.unquote(_url.path.lstrip('/')),
+            'USER': urllib.parse.unquote(_url.username or ''),
+            'PASSWORD': urllib.parse.unquote(_url.password or ''),
+            'HOST': _url.hostname or '',
+            'PORT': str(_url.port or 5432),
+            'CONN_MAX_AGE': int(os.getenv('CONN_MAX_AGE', '0')),
+            'OPTIONS': {
+                'sslmode': _ssl_mode,
+            },
+        }
     }
-}
+else:
+    DB_NAME = os.getenv('DB_NAME', 'nohemysys_db')
+    DB_USER = os.getenv('DB_USER', 'postgres')
+    DB_PASSWORD = os.getenv('DB_PASSWORD', 'postgres')
+    DB_HOST = os.getenv('DB_HOST', '127.0.0.1')
+    DB_PORT = '' if DB_HOST.startswith('/') else os.getenv('DB_PORT', '5432')
+    _is_local_db = DB_HOST in ('127.0.0.1', 'localhost', 'db')
+    _db_sslmode = os.getenv('DB_SSLMODE', 'prefer' if _is_local_db else 'require')
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT,
+            'CONN_MAX_AGE': int(os.getenv('CONN_MAX_AGE', '0')),
+            'OPTIONS': {
+                'sslmode': _db_sslmode,
+            },
+        }
+    }
 
 AUTH_USER_MODEL = 'autenticacion.User'
 
@@ -139,6 +166,8 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://172\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$",
     r"^http://10\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$",
     r"^https://.*\.run\.app$",
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.onrender\.com$",
 ]
 
 CORS_EXTRA = os.getenv('CORS_ALLOWED_ORIGINS', '')
@@ -146,5 +175,8 @@ if CORS_EXTRA:
     CORS_ALLOWED_ORIGINS = [orig.strip() for orig in CORS_EXTRA.split(',') if orig.strip()]
 
 CSRF_TRUSTED_ORIGINS = [
-    orig.strip() for orig in os.getenv('CSRF_TRUSTED_ORIGINS', 'https://*.run.app,http://localhost:3000').split(',') if orig.strip()
+    orig.strip() for orig in os.getenv(
+        'CSRF_TRUSTED_ORIGINS',
+        'https://*.run.app,https://*.vercel.app,https://*.onrender.com,http://localhost:3000,http://127.0.0.1:3000'
+    ).split(',') if orig.strip()
 ]
