@@ -1,0 +1,69 @@
+================================================================================
+  NOHEMYSYS - INSTRUCCIONES PARA LEVANTAR EL SISTEMA CON DOCKER
+================================================================================
+
+Requisitos previos:
+- Tener instalado Docker y Docker Desktop (o Docker Engine con docker-compose).
+- Asegurarse de que Docker esté en ejecución.
+
+--------------------------------------------------------------------------------
+PASOS PARA LEVANTAR EN OTRA MÁQUINA:
+--------------------------------------------------------------------------------
+
+1. Descomprimir el archivo .zip en la carpeta de su preferencia.
+
+2. Abrir una terminal (PowerShell, CMD, Bash o Terminal de Linux/Mac) en dicha carpeta:
+   cd "ruta_hacia_la_carpeta_descomprimida"
+
+3. (Opcional) Si desea cambiar puertos o credenciales, copie el archivo de ejemplo:
+   En Windows: copy .env.example .env
+   En Linux/Mac: cp .env.example .env
+
+4. Ejecutar el comando para construir y levantar todos los contenedores:
+   docker compose up --build -d
+
+   (O si usa una versión anterior de Docker Compose: docker-compose up --build -d)
+
+5. Los contenedores realizarán automáticamente:
+   - Inicio del motor de base de datos PostgreSQL 16.
+   - Ejecución de migraciones de Django (tablas del sistema).
+   - Creación de datos iniciales esenciales (Roles, Consumidor Final C/F, Categorías base).
+   - Creación del usuario Administrador del sistema.
+   - Compilación del frontend React en Nginx optimizado con Gzip.
+
+--------------------------------------------------------------------------------
+ACCESO A LA APLICACIÓN:
+--------------------------------------------------------------------------------
+
+- Frontend (Sistema Web):
+  http://localhost:3000
+
+- Backend (API REST Django / Admin):
+  http://localhost:8000/api/
+
+- Credenciales de acceso por defecto:
+  Usuario:     admin
+  Contraseña:  Admin123*
+
+--------------------------------------------------------------------------------
+COMANDOS ÚTILES DE DOCKER:
+--------------------------------------------------------------------------------
+
+- Ver el estado y logs en tiempo real:
+  docker compose logs -f
+
+- Ver logs específicos del backend:
+  docker compose logs -f backend
+
+- Detener el sistema sin borrar los datos:
+  docker compose stop
+
+- Reanudar el sistema:
+  docker compose start
+
+- Detener y remover los contenedores:
+  docker compose down
+
+- Reiniciar desde cero eliminando también los datos de la base de datos:
+  docker compose down -v
+================================================================================

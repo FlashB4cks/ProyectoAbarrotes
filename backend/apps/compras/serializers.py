@@ -25,14 +25,12 @@ class DetalleCompraSerializer(serializers.ModelSerializer):
             'subtotal'
         ]
 
-
 class ItemCompraInputSerializer(serializers.Serializer):
     producto = serializers.PrimaryKeyRelatedField(queryset=Producto.objects.filter(is_active=True))
     cantidad = serializers.IntegerField(min_value=1)
     costo_unitario = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal('0.01'))
     numero_lote = serializers.CharField(max_length=50, required=False, allow_blank=True)
     fecha_vencimiento = serializers.DateField(required=False, allow_null=True)
-
 
 class CompraSerializer(serializers.ModelSerializer):
     proveedor_nombre = serializers.ReadOnlyField(source='proveedor.nombre_empresa')
@@ -65,7 +63,6 @@ class CompraSerializer(serializers.ModelSerializer):
     def get_total_items(self, obj):
         return obj.detalles.count()
 
-
 class CompraCreateSerializer(serializers.ModelSerializer):
     items = ItemCompraInputSerializer(many=True, write_only=True)
 
@@ -94,7 +91,6 @@ class CompraCreateSerializer(serializers.ModelSerializer):
         items_data = validated_data.pop('items')
         user = self.context['request'].user
 
-        # Crear la cabecera de la compra
         compra = Compra.objects.create(
             numero_comprobante=validated_data['numero_comprobante'],
             proveedor=validated_data['proveedor'],
@@ -114,7 +110,6 @@ class CompraCreateSerializer(serializers.ModelSerializer):
             subtotal = cantidad * costo_unitario
             total_acumulado += float(subtotal)
 
-            # 1. Registrar detalle de compra
             DetalleCompra.objects.create(
                 compra=compra,
                 producto=producto,
@@ -123,14 +118,12 @@ class CompraCreateSerializer(serializers.ModelSerializer):
                 subtotal=subtotal
             )
 
-            # 2. Fecha de vencimiento (por defecto 6 meses si no se especificó)
             f_venc = item.get('fecha_vencimiento')
             if not f_venc:
                 f_venc = hoy + timedelta(days=180)
 
             num_lote = item.get('numero_lote', '').strip()
 
-            # 3. Crear lote en inventario (FIFO) con correlativo secuencial de tabla
             lote = LoteInventario.objects.create(
                 producto=producto,
                 compra=compra,
@@ -146,7 +139,6 @@ class CompraCreateSerializer(serializers.ModelSerializer):
                 lote.numero_lote = f"LOT-{lote.id_lote:05d}"
                 lote.save(update_fields=['numero_lote'])
 
-            # 5. Incrementar stock acumulado del producto
             producto.stock_total += cantidad
             producto.save(update_fields=['stock_total'])
 

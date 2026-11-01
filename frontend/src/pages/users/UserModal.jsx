@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-/* ── MODAL: CREACIÓN / EDICIÓN DE USUARIOS ── */
 export const UserModal = ({ isOpen, onClose, onSave, editingUser, users = [], roles = [] }) => {
   const [formData, setFormData] = useState({ first_name: '', last_name: '', dpi: '', nit: '', telefono: '', direccion: '', rol: 'VENDEDOR' });
   const [errors, setErrors] = useState({});
@@ -46,14 +45,12 @@ export const UserModal = ({ isOpen, onClose, onSave, editingUser, users = [], ro
       errs.last_name = 'El apellido es obligatorio.';
     }
 
-    // Regla de negocio: El apellido no puede ser idéntico al nombre
     if (fName && lName && fName.toLowerCase() === lName.toLowerCase()) {
       errs.last_name = 'El apellido no puede ser idéntico al nombre del usuario.';
     }
 
-    // Validación de nombres y apellidos duplicados en el sistema
     if (fName && lName && users && users.length > 0) {
-      const isDuplicate = users.some(u => 
+      const isDuplicate = users.some(u =>
         (!editingUser || u.id !== editingUser.id) &&
         u.first_name && u.first_name.trim().toLowerCase() === fName.toLowerCase() &&
         u.last_name && u.last_name.trim().toLowerCase() === lName.toLowerCase()
@@ -119,12 +116,12 @@ export const UserModal = ({ isOpen, onClose, onSave, editingUser, users = [], ro
           )}
           <div className="form-grid">
             <div className="form-group">
-              <label>Nombre(s) <span className="req">*</span></label>
+              <label>Nombres <span className="req">*</span></label>
               <input type="text" name="first_name" value={formData.first_name} onChange={handleChange} className={errors.first_name ? 'input-error' : ''} />
               {errors.first_name && <span className="error-text">{errors.first_name}</span>}
             </div>
             <div className="form-group">
-              <label>Apellido(s) <span className="req">*</span></label>
+              <label>Apellidos <span className="req">*</span></label>
               <input type="text" name="last_name" value={formData.last_name} onChange={handleChange} className={errors.last_name ? 'input-error' : ''} />
               {errors.last_name && <span className="error-text">{errors.last_name}</span>}
             </div>
@@ -174,6 +171,5 @@ export const UserModal = ({ isOpen, onClose, onSave, editingUser, users = [], ro
     </div>
   );
 };
-
 
 export default UserModal;

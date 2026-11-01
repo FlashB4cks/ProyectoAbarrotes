@@ -7,7 +7,7 @@ from django.utils import timezone
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 
-from .models import Cliente, SesionCaja, Venta, DetalleVenta, SalidaLoteVenta, MovimientoFinanciero
+from .models import Cliente, SesionCaja, Venta, MovimientoFinanciero
 from .serializers import (
     ClienteSerializer,
     VentaSerializer,
@@ -16,7 +16,6 @@ from .serializers import (
     SesionCajaSerializer,
 )
 from apps.auditoria.services import registrar_auditoria
-
 
 class ClienteViewSet(viewsets.ModelViewSet):
     """
@@ -116,7 +115,6 @@ class ClienteViewSet(viewsets.ModelViewSet):
             'is_active': cliente.is_active
         }, status=status.HTTP_200_OK)
 
-
 class VentaViewSet(viewsets.ModelViewSet):
     """
     Punto de Venta (POS) y Facturación con Descuento FIFO Automático.
@@ -166,8 +164,7 @@ class VentaViewSet(viewsets.ModelViewSet):
         serializer = VentaCreateSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         venta = serializer.save()
-        
-        # Registrar en Bitácora de Auditoría (RF-07.1)
+
         registrar_auditoria(
             usuario=request.user,
             accion="VENTA",
@@ -176,7 +173,6 @@ class VentaViewSet(viewsets.ModelViewSet):
             request=request
         )
 
-        # Devolver el objeto serializado completo para el comprobante
         read_serializer = VentaSerializer(venta)
         return Response({
             'status': 'success',
@@ -204,7 +200,7 @@ class VentaViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
-            # Revertir cada salida de lote y reponer stock del producto atómicamente (SEC-07)
+
             for detalle in venta.detalles.all():
                 for salida in detalle.salidas_lote.all():
                     LoteInventario.objects.filter(pk=salida.lote_id).update(
@@ -217,7 +213,6 @@ class VentaViewSet(viewsets.ModelViewSet):
             venta.estado = Venta.EstadoVenta.ANULADA
             venta.save(update_fields=['estado'])
 
-            # Registrar Movimiento Financiero de Egreso por anulación
             usuario_anula = request.user if (request.user and request.user.is_authenticated) else get_user_model().objects.filter(is_active=True).first()
             MovimientoFinanciero.objects.create(
                 usuario=usuario_anula,
@@ -227,7 +222,6 @@ class VentaViewSet(viewsets.ModelViewSet):
                 concepto=f"Anulación y Reembolso Factura #{venta.codigo_factura}",
             )
 
-            # Registrar en Bitácora de Auditoría (RF-07.1)
             registrar_auditoria(
                 usuario=request.user,
                 accion="ANULAR_VENTA",
@@ -263,7 +257,6 @@ class VentaViewSet(viewsets.ModelViewSet):
             'desglose_metodos': list(por_metodo),
         }, status=status.HTTP_200_OK)
 
-
 class MovimientoFinancieroViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Bitácora y Flujo de Caja (Movimientos Financieros de Ingreso y Egreso).
@@ -281,7 +274,6 @@ class MovimientoFinancieroViewSet(viewsets.ReadOnlyModelViewSet):
         if fecha:
             qs = qs.filter(fecha_hora__date=fecha)
         return qs
-
 
 class SesionCajaViewSet(viewsets.ModelViewSet):
     """
@@ -301,24 +293,20 @@ class SesionCajaViewSet(viewsets.ModelViewSet):
                 'mensaje': 'No hay ninguna sesión de caja abierta en este momento.'
             }, status=status.HTTP_200_OK)
 
-        # Calcular métricas dinámicas en tiempo real de esta sesión
         ventas_sesion = Venta.objects.filter(sesion_caja=sesion, estado=Venta.EstadoVenta.COMPLETADA)
-        
+
         ventas_efectivo = ventas_sesion.filter(metodo_pago=Venta.MetodoPago.EFECTIVO).aggregate(t=Sum('total'))['t'] or Decimal('0.00')
         ventas_tarjeta = ventas_sesion.filter(metodo_pago=Venta.MetodoPago.TARJETA).aggregate(t=Sum('total'))['t'] or Decimal('0.00')
         ventas_transferencia = ventas_sesion.filter(metodo_pago=Venta.MetodoPago.TRANSFERENCIA).aggregate(t=Sum('total'))['t'] or Decimal('0.00')
         total_ventas = ventas_efectivo + ventas_tarjeta + ventas_transferencia
         conteo_ventas = ventas_sesion.count()
 
-        # Entradas y salidas manuales de caja (movimientos que no son la venta en sí)
         movimientos_sesion = MovimientoFinanciero.objects.filter(sesion_caja=sesion)
         entradas_manuales = movimientos_sesion.filter(tipo=MovimientoFinanciero.TipoMovimiento.INGRESO, venta__isnull=True).exclude(concepto__startswith='Fondo Inicial').aggregate(t=Sum('monto'))['t'] or Decimal('0.00')
         salidas_manuales = movimientos_sesion.filter(tipo=MovimientoFinanciero.TipoMovimiento.EGRESO).aggregate(t=Sum('monto'))['t'] or Decimal('0.00')
 
-        # Efectivo esperado en gaveta: Fondo Inicial + Ventas Efectivo + Entradas - Salidas
         efectivo_esperado = sesion.monto_inicial + ventas_efectivo + entradas_manuales - salidas_manuales
 
-        # Movimientos recientes para la tabla de flujo de caja
         movimientos_data = MovimientoFinancieroSerializer(movimientos_sesion.order_by('-fecha_hora')[:30], many=True).data
 
         return Response({
@@ -345,7 +333,7 @@ class SesionCajaViewSet(viewsets.ModelViewSet):
         if activa:
             return Response({
                 'status': 'error',
-                'message': f'Ya existe una sesión de caja abierta (Turno #{activa.id_sesion}) iniciada el {activa.fecha_apertura.strftime("%d/%m/%Y %H:%M")}. Debe cerrarla antes de abrir una nueva.'
+                'message': f'Ya existe una sesión de caja abierta: Turno #{activa.id_sesion} iniciada el {activa.fecha_apertura.strftime("%d/%m/%Y %H:%M")}. Debe cerrarla antes de abrir una nueva.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
         monto_raw = request.data.get('monto_inicial', 0.00)
@@ -363,7 +351,6 @@ class SesionCajaViewSet(viewsets.ModelViewSet):
                 estado=SesionCaja.EstadoCaja.ABIERTA,
             )
 
-            # Registrar movimiento de fondo inicial
             MovimientoFinanciero.objects.create(
                 usuario=request.user,
                 sesion_caja=sesion,
@@ -452,13 +439,12 @@ class SesionCajaViewSet(viewsets.ModelViewSet):
         observaciones = (request.data.get('observaciones') or '').strip()
 
         with transaction.atomic():
-            # Consolidar ventas
+
             ventas_sesion = Venta.objects.filter(sesion_caja=sesion, estado=Venta.EstadoVenta.COMPLETADA)
             ventas_efectivo = ventas_sesion.filter(metodo_pago=Venta.MetodoPago.EFECTIVO).aggregate(t=Sum('total'))['t'] or Decimal('0.00')
             ventas_tarjeta = ventas_sesion.filter(metodo_pago=Venta.MetodoPago.TARJETA).aggregate(t=Sum('total'))['t'] or Decimal('0.00')
             ventas_transferencia = ventas_sesion.filter(metodo_pago=Venta.MetodoPago.TRANSFERENCIA).aggregate(t=Sum('total'))['t'] or Decimal('0.00')
 
-            # Consolidar movimientos
             movimientos_sesion = MovimientoFinanciero.objects.filter(sesion_caja=sesion)
             entradas_manuales = movimientos_sesion.filter(tipo=MovimientoFinanciero.TipoMovimiento.INGRESO, venta__isnull=True).exclude(concepto__startswith='Fondo Inicial').aggregate(t=Sum('monto'))['t'] or Decimal('0.00')
             salidas_manuales = movimientos_sesion.filter(tipo=MovimientoFinanciero.TipoMovimiento.EGRESO).aggregate(t=Sum('monto'))['t'] or Decimal('0.00')

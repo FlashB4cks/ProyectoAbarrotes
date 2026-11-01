@@ -57,7 +57,6 @@ class CompraViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verificar si algún lote originado por esta compra ha sido consumido en ventas
         lotes = LoteInventario.objects.select_for_update().filter(compra=compra)
         for lote in lotes:
             if lote.cantidad_actual < lote.cantidad_inicial:
@@ -68,7 +67,6 @@ class CompraViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # Proceder con la anulación y reversión atómica de stock (SEC-07)
         for lote in lotes:
             Producto.objects.filter(pk=lote.producto_id).update(
                 stock_total=models.F('stock_total') - lote.cantidad_actual

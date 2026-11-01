@@ -1,6 +1,5 @@
 import React from 'react';
 
-/* ── MODAL: DETALLE DE COMPRA ── */
 export const PurchaseDetailModal = ({ isOpen, onClose, compra }) => {
   if (!isOpen || !compra) return null;
 
@@ -96,6 +95,5 @@ export const PurchaseDetailModal = ({ isOpen, onClose, compra }) => {
     </div>
   );
 };
-
 
 export default PurchaseDetailModal;

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-/* ── MODAL: EMPLEADO CREADO ── */
 export const CredentialsModal = ({ isOpen, onClose, credentials }) => {
   const [copied, setCopied] = useState(false);
   if (!isOpen || !credentials) return null;
@@ -36,6 +35,5 @@ export const CredentialsModal = ({ isOpen, onClose, credentials }) => {
     </div>
   );
 };
-
 
 export default CredentialsModal;

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { Toast } from '../../components/common';
+import { Toast, Pagination, usePagination } from '../../components/common';
 import { IconAlertTriangle, IconBarcode, IconCalendar, IconCheck, IconLayers, IconPackage, IconPlus, IconRefresh, IconSearch, IconTag, IconTrash, IconUser } from '../../components/icons/Icons';
 
 import RegisterMermaModal from './RegisterMermaModal';
-/* ── MÓDULO: INVENTARIO, LOTES FIFO Y SEMÁFORO DE VENCIMIENTO ── */
+import BatchDiscountModal from './BatchDiscountModal';
+
 export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
-  const [subTab, setSubTab] = useState('semaforo'); // 'semaforo' | 'stock_critico' | 'mermas'
+  const [subTab, setSubTab] = useState('semaforo');
   const [loading, setLoading] = useState(false);
   const [lotes, setLotes] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -15,19 +16,51 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
   const [mermas, setMermas] = useState([]);
   const [toast, setToast] = useState(null);
 
-  // Filtros de Lotes
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState('ALL');
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [soloDisponibles, setSoloDisponibles] = useState(true);
 
-  // Filtros de Historial Mermas
   const [filterTipoMerma, setFilterTipoMerma] = useState('ALL');
 
-  // Modal de Merma
-  const [selectedLoteForMerma, setSelectedLoteForMerma] = useState(null);
+  const {
+    currentPage: currentLotePage,
+    setCurrentPage: setCurrentLotePage,
+    pageSize: lotePageSize,
+    setPageSize: setLotePageSize,
+    paginatedItems: paginatedLotes,
+    totalItems: totalLotes
+  } = usePagination(lotes, 10);
 
-  // Helpers de Formato y Plurales
+  useEffect(() => {
+    setCurrentLotePage(1);
+  }, [searchTerm, filterEstado, filterCategory, soloDisponibles, setCurrentLotePage]);
+
+  const {
+    currentPage: currentCriticoPage,
+    setCurrentPage: setCurrentCriticoPage,
+    pageSize: criticoPageSize,
+    setPageSize: setCriticoPageSize,
+    paginatedItems: paginatedCritico,
+    totalItems: totalCritico
+  } = usePagination(stockCritico, 10);
+
+  const {
+    currentPage: currentMermaPage,
+    setCurrentPage: setCurrentMermaPage,
+    pageSize: mermaPageSize,
+    setPageSize: setMermaPageSize,
+    paginatedItems: paginatedMermas,
+    totalItems: totalMermas
+  } = usePagination(mermas, 10);
+
+  useEffect(() => {
+    setCurrentMermaPage(1);
+  }, [searchTerm, filterTipoMerma, setCurrentMermaPage]);
+
+  const [selectedLoteForMerma, setSelectedLoteForMerma] = useState(null);
+  const [selectedLoteForDiscount, setSelectedLoteForDiscount] = useState(null);
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const clean = String(dateStr).split('T')[0];
@@ -41,7 +74,6 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
   const pluralLotes = (n) => (n === 1 ? '1 lote' : `${n} lotes`);
   const pluralUds = (n) => (n === 1 ? '1 ud' : `${n} uds`);
 
-  // Cargar datos
   const loadInventoryData = async () => {
     setLoading(true);
     try {
@@ -84,7 +116,6 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
     loadInventoryData();
   }, [subTab, filterEstado, filterCategory, soloDisponibles, filterTipoMerma]);
 
-  // Render del semáforo con badge silueta
   const renderSemaforoBadge = (lote) => {
     const estado = lote.estado_vencimiento;
     const dias = lote.dias_para_vencer;
@@ -117,14 +148,14 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
     return (
       <span className="lot-badge lot-bueno" title={`Vence el ${formatDate(lote.fecha_vencimiento)}`}>
         <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', background: '#059669' }}></span>
-        <span>Vigente ({dias} d)</span>
+        <span>Vigente {dias} d</span>
       </span>
     );
   };
 
   return (
     <div className="catalog-container" style={{ padding: '0 24px 32px 24px' }}>
-      {/* Barra de Sub-Pestañas */}
+
       <div className="inv-control-bar">
         <div className="inv-control-tabs">
           <button
@@ -133,7 +164,7 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
             onClick={() => setSubTab('semaforo')}
           >
             <IconLayers size={16} />
-            <span>Semáforo de Caducidad FIFO</span>
+            <span>Semáforo de Caducidad PEPS</span>
           </button>
           <button
             type="button"
@@ -172,7 +203,6 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
         </div>
       </div>
 
-      {/* Tarjetas de Métricas / KPIs */}
       {resumen && (
         <div className="inv-kpi-grid">
           <div className="inv-kpi-card kpi-total">
@@ -203,7 +233,7 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
 
           <div className="inv-kpi-card kpi-urgent">
             <div className="kpi-header">
-              <span>Por Vencer (≤ 15 d)</span>
+              <span>Por Vencer</span>
               <span style={{ color: '#ea580c' }}><IconCalendar size={16} /></span>
             </div>
             <div className="kpi-value" style={{ color: '#ea580c' }}>
@@ -216,7 +246,7 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
 
           <div className="inv-kpi-card kpi-warning">
             <div className="kpi-header">
-              <span>Alerta (16 a 30 d)</span>
+              <span>En Alerta</span>
               <span style={{ color: '#d97706' }}><IconTag size={16} /></span>
             </div>
             <div className="kpi-value" style={{ color: '#d97706' }}>
@@ -229,7 +259,7 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
 
           <div className="inv-kpi-card kpi-success">
             <div className="kpi-header">
-              <span>Vigentes (&gt; 30 d)</span>
+              <span>Lotes Vigentes</span>
               <span style={{ color: '#059669' }}><IconCheck size={16} /></span>
             </div>
             <div className="kpi-value" style={{ color: '#059669' }}>
@@ -242,10 +272,9 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
         </div>
       )}
 
-      {/* PESTAÑA 1: SEMÁFORO DE CADUCIDAD FIFO */}
       {subTab === 'semaforo' && (
         <div className="card p-0">
-          {/* Barra de Filtros Unificada */}
+
           <div style={{
             padding: '16px 20px',
             borderBottom: '1px solid var(--card-border)',
@@ -284,10 +313,10 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
                 style={{ minWidth: '200px' }}
               >
                 <option value="ALL">Todos los Estados de Semáforo</option>
-                <option value="VENCIDO">Vencidos (Rojo)</option>
-                <option value="POR_VENCER">Por Vencer ≤ 15 días (Naranja)</option>
-                <option value="ALERTA">En Alerta 16-30 días (Amarillo)</option>
-                <option value="BUENO">Vigentes &gt; 30 días (Verde)</option>
+                <option value="VENCIDO">Vencidos</option>
+                <option value="POR_VENCER">Por Vencer ≤ 15 días</option>
+                <option value="ALERTA">En Alerta 16-30 días</option>
+                <option value="BUENO">Vigentes &gt; 30 días</option>
               </select>
 
               <select
@@ -330,15 +359,14 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
             </div>
           </div>
 
-          {/* Tabla de Lotes */}
           <div className="table-responsive">
             <table className="table">
               <thead>
                 <tr>
                   <th>Lote / Ref</th>
                   <th>Producto &amp; Categoría</th>
-                  <th style={{ width: '170px' }}>Stock Lote (FIFO)</th>
-                  <th>Costo &amp; Valor Lote</th>
+                  <th style={{ width: '170px' }}>Stock por Lote</th>
+                  <th>Costo &amp; Precio Venta</th>
                   <th>Vencimiento</th>
                   <th>Semáforo</th>
                   <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -358,7 +386,7 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
                     </td>
                   </tr>
                 ) : (
-                  lotes.map(l => {
+                  paginatedLotes.map(l => {
                     const pct = l.cantidad_inicial > 0 ? Math.round((l.cantidad_actual / l.cantidad_inicial) * 100) : 0;
                     const isZero = l.cantidad_actual <= 0;
 
@@ -424,12 +452,37 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
                           </div>
                         </td>
                         <td>
-                          <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>
-                            Q {parseFloat(l.costo_unitario).toFixed(2)}
-                            <span style={{ fontSize: '11px', fontWeight: '400', color: 'var(--text-muted)', marginLeft: '3px' }}>/ {l.unidad_simbolo}</span>
+                          <div style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>
+                            Costo: <strong>Q {parseFloat(l.costo_unitario).toFixed(2)}</strong>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '2px' }}>/ {l.unidad_simbolo}</span>
                           </div>
-                          <div style={{ fontSize: '11.5px', color: 'var(--accent)', fontWeight: '600', marginTop: '2px' }}>
-                            Total: Q {parseFloat(l.valor_lote || 0).toFixed(2)}
+                          {parseFloat(l.descuento_porcentaje) > 0 ? (
+                            <div style={{ marginTop: '3px' }}>
+                              <span style={{
+                                fontSize: '10.5px',
+                                background: 'rgba(184, 134, 11, 0.15)',
+                                color: 'var(--accent)',
+                                padding: '1px 6px',
+                                borderRadius: '6px',
+                                fontWeight: 800,
+                                display: 'inline-block'
+                              }}>
+                                -{parseFloat(l.descuento_porcentaje)}% Descuento Lote
+                              </span>
+                              <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--accent)', marginTop: '2px' }}>
+                                Q {parseFloat(l.precio_venta_descuento).toFixed(2)}
+                                <span style={{ textDecoration: 'line-through', fontSize: '11px', color: 'var(--text-muted)', marginLeft: '5px', fontWeight: 400 }}>
+                                  Q {parseFloat(l.precio_venta_regular).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                              Precio: <strong style={{ color: 'var(--text-main)' }}>Q {parseFloat(l.precio_venta_regular || 0).toFixed(2)}</strong>
+                            </div>
+                          )}
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Valor en lote: Q {parseFloat(l.valor_lote || 0).toFixed(2)}
                           </div>
                         </td>
                         <td>
@@ -444,26 +497,50 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
                           {renderSemaforoBadge(l)}
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            style={{
-                              fontSize: '12px',
-                              padding: '5px 12px',
-                              borderRadius: '8px',
-                              color: l.estado_vencimiento === 'VENCIDO' ? '#dc2626' : 'var(--text-main)',
-                              borderColor: l.estado_vencimiento === 'VENCIDO' ? 'rgba(220, 38, 38, 0.4)' : 'var(--card-border)',
-                              background: l.estado_vencimiento === 'VENCIDO' ? 'rgba(220, 38, 38, 0.05)' : 'transparent',
-                            }}
-                            onClick={() => setSelectedLoteForMerma(l)}
-                            disabled={isZero}
-                            title={isZero ? 'El lote no tiene existencias disponibles' : 'Dar de baja unidades por vencimiento o rotura'}
-                          >
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                              <IconTrash size={13} />
-                              <span>Dar de Baja</span>
-                            </span>
-                          </button>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{
+                                fontSize: '12px',
+                                padding: '5px 10px',
+                                borderRadius: '8px',
+                                color: parseFloat(l.descuento_porcentaje) > 0 ? 'var(--accent)' : 'var(--text-main)',
+                                borderColor: parseFloat(l.descuento_porcentaje) > 0 ? 'var(--accent)' : 'var(--card-border)',
+                                background: parseFloat(l.descuento_porcentaje) > 0 ? 'rgba(184, 134, 11, 0.1)' : 'transparent',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                              onClick={() => setSelectedLoteForDiscount(l)}
+                              disabled={isZero}
+                              title={parseFloat(l.descuento_porcentaje) > 0 ? `Lote con ${parseFloat(l.descuento_porcentaje)}% de descuento. Clic para editar o quitar.` : 'Asignar porcentaje de descuento a este lote'}
+                            >
+                              <IconTag size={13} />
+                              <span>{parseFloat(l.descuento_porcentaje) > 0 ? `${parseFloat(l.descuento_porcentaje)}% Descuento` : 'Descuento'}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{
+                                fontSize: '12px',
+                                padding: '5px 12px',
+                                borderRadius: '8px',
+                                color: l.estado_vencimiento === 'VENCIDO' ? '#dc2626' : 'var(--text-main)',
+                                borderColor: l.estado_vencimiento === 'VENCIDO' ? 'rgba(220, 38, 38, 0.4)' : 'var(--card-border)',
+                                background: l.estado_vencimiento === 'VENCIDO' ? 'rgba(220, 38, 38, 0.05)' : 'transparent',
+                              }}
+                              onClick={() => setSelectedLoteForMerma(l)}
+                              disabled={isZero}
+                              title={isZero ? 'El lote no tiene existencias disponibles' : 'Dar de baja unidades por vencimiento o rotura'}
+                            >
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                <IconTrash size={13} />
+                                <span>Dar de Baja</span>
+                              </span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -472,10 +549,19 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={currentLotePage}
+            totalItems={totalLotes}
+            pageSize={lotePageSize}
+            onPageChange={setCurrentLotePage}
+            onPageSizeChange={(newSize) => { setLotePageSize(newSize); setCurrentLotePage(1); }}
+            pageSizeOptions={[10, 20, 50, 100]}
+            itemName="lotes de inventario"
+          />
         </div>
       )}
 
-      {/* PESTAÑA 2: ALERTAS DE STOCK CRÍTICO */}
       {subTab === 'stock_critico' && (
         <div className="card p-0">
           <div style={{
@@ -552,7 +638,7 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
                     </td>
                   </tr>
                 ) : (
-                  stockCritico.map(p => {
+                  paginatedCritico.map(p => {
                     const isZero = p.stock_total <= 0;
                     return (
                       <tr key={p.id_producto}>
@@ -624,10 +710,19 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={currentCriticoPage}
+            totalItems={totalCritico}
+            pageSize={criticoPageSize}
+            onPageChange={setCurrentCriticoPage}
+            onPageSizeChange={(newSize) => { setCriticoPageSize(newSize); setCurrentCriticoPage(1); }}
+            pageSizeOptions={[10, 20, 50, 100]}
+            itemName="alertas de stock crítico"
+          />
         </div>
       )}
 
-      {/* PESTAÑA 3: HISTORIAL DE MERMAS Y BAJAS */}
       {subTab === 'mermas' && (
         <div className="card p-0">
           <div style={{
@@ -681,7 +776,7 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
                   <th>Producto &amp; Lote Afectado</th>
                   <th>Tipo de Merma</th>
                   <th>Cantidad Retirada</th>
-                  <th>Pérdida (GTQ)</th>
+                  <th>Pérdida</th>
                   <th>Motivo / Justificación</th>
                   <th>Usuario Responsable</th>
                 </tr>
@@ -700,7 +795,7 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
                     </td>
                   </tr>
                 ) : (
-                  mermas.map(m => (
+                  paginatedMermas.map(m => (
                     <tr key={m.id_ajuste}>
                       <td>
                         <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '13px' }}>
@@ -766,10 +861,19 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={currentMermaPage}
+            totalItems={totalMermas}
+            pageSize={mermaPageSize}
+            onPageChange={setCurrentMermaPage}
+            onPageSizeChange={(newSize) => { setMermaPageSize(newSize); setCurrentMermaPage(1); }}
+            pageSizeOptions={[10, 20, 50, 100]}
+            itemName="registros de merma"
+          />
         </div>
       )}
 
-      {/* Modal de Registro de Merma */}
       <RegisterMermaModal
         isOpen={Boolean(selectedLoteForMerma)}
         onClose={() => setSelectedLoteForMerma(null)}
@@ -780,10 +884,25 @@ export const InventoryBatchesPage = ({ onNavigateToPurchases }) => {
         }}
       />
 
+      <BatchDiscountModal
+        isOpen={Boolean(selectedLoteForDiscount)}
+        onClose={() => setSelectedLoteForDiscount(null)}
+        lote={selectedLoteForDiscount}
+        onSuccess={(updatedLote) => {
+          const pctVal = parseFloat(updatedLote?.descuento_porcentaje) || 0;
+          setToast({
+            type: 'success',
+            message: pctVal > 0
+              ? `Descuento del ${pctVal}% aplicado exitosamente al lote ${updatedLote.numero_lote}.`
+              : `Descuento removido del lote ${updatedLote.numero_lote}.`
+          });
+          loadInventoryData();
+        }}
+      />
+
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 };
-
 
 export default InventoryBatchesPage;

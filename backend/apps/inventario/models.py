@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.conf import settings
 from apps.catalogos.models import Producto
@@ -13,6 +14,8 @@ class LoteInventario(models.Model):
     cantidad_inicial = models.IntegerField(verbose_name="Cantidad Inicial")
     cantidad_actual = models.IntegerField(verbose_name="Cantidad Disponible (Stock Lote)")
     costo_unitario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Costo Unitario (GTQ)")
+    descuento_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), verbose_name="Descuento del Lote (%)")
+    motivo_descuento = models.CharField(max_length=255, blank=True, default='', verbose_name="Motivo del Descuento")
     is_active = models.BooleanField(default=True, verbose_name="Activo")
 
     class Meta:
@@ -21,9 +24,21 @@ class LoteInventario(models.Model):
         verbose_name_plural = 'Lotes de Inventario (FIFO)'
         ordering = ['fecha_vencimiento', 'fecha_ingreso']
 
+    @property
+    def precio_venta_regular(self):
+        return self.producto.precio_venta if self.producto else Decimal('0.00')
+
+    @property
+    def precio_venta_descuento(self):
+        if not self.producto:
+            return Decimal('0.00')
+        if self.descuento_porcentaje > Decimal('0.00'):
+            factor = (Decimal('100.00') - self.descuento_porcentaje) / Decimal('100.00')
+            return (self.producto.precio_venta * factor).quantize(Decimal('0.01'))
+        return self.producto.precio_venta
+
     def __str__(self):
         return f"Lote {self.numero_lote} - {self.producto.nombre} (Vence: {self.fecha_vencimiento}) - Disponibles: {self.cantidad_actual}"
-
 
 class AjusteInventario(models.Model):
     class TipoAjuste(models.TextChoices):

@@ -3,7 +3,7 @@ import re
 import sys
 
 BASE_DIR = r'c:\Users\ruben\OneDrive\Escritorio\Proyecto abarrotes\frontend\src'
-APP_FILE = os.path.join(BASE_DIR, 'App.jsx.bak') # Read from backup so we always have the clean source!
+APP_FILE = os.path.join(BASE_DIR, 'App.jsx.bak')
 
 with open(APP_FILE, 'r', encoding='utf-8') as f:
     lines = f.readlines()
@@ -30,11 +30,6 @@ def compute_imports(code, file_dir_from_src='', ignore_common=None, ignore_icons
     if ignore_icons is None:
         ignore_icons = []
 
-    # Calculate relative prefix to 'src/'
-    # e.g. for 'pages/pos' -> '../../'
-    # for 'components/layout' -> '../../'
-    # for 'components/common' -> '../../'
-    # for 'api' -> '../'
     depth = len(file_dir_from_src.strip('/').split('/')) if file_dir_from_src else 0
     rel_src = '../' * depth if depth > 0 else './'
 
@@ -74,7 +69,6 @@ def write_module(rel_path, code, imports_header, exports_footer=''):
         f.write(imports_header + code + exports_footer)
     print(f"Created: {rel_path}")
 
-# --- 1. Suppliers ---
 supp_modal_code = get_slice(1059, 1275).replace('const SupplierModal =', 'export const SupplierModal =')
 write_module(
     'pages/suppliers/SupplierModal.jsx',
@@ -93,7 +87,6 @@ write_module(
     '\nexport default SuppliersPage;\n'
 )
 
-# --- 2. Clients ---
 cust_modal_code = get_slice(3386, 3621).replace('const CustomerModal =', 'export const CustomerModal =')
 write_module(
     'pages/clients/CustomerModal.jsx',
@@ -112,7 +105,6 @@ write_module(
     '\nexport default ClientsPage;\n'
 )
 
-# --- 3. Users & Roles ---
 user_modal_code = get_slice(616, 766).replace('const UserModal =', 'export const UserModal =')
 write_module(
     'pages/users/UserModal.jsx',
@@ -139,7 +131,6 @@ write_module(
     '\nexport default UsersPage;\n'
 )
 
-# --- 4. Products, Brands, Units ---
 marca_modal_code = get_slice(883, 964).replace('const MarcaModal =', 'export const MarcaModal =')
 write_module(
     'pages/products/MarcaModal.jsx',
@@ -176,7 +167,6 @@ write_module(
     '\nexport default ProductsPage;\n'
 )
 
-# --- 5. Purchases ---
 new_purch_code = get_slice(2155, 2573).replace('const NewPurchaseModal =', 'export const NewPurchaseModal =')
 new_purch_imports = compute_imports(new_purch_code, 'pages/purchases') + \
     "import SupplierModal from '../suppliers/SupplierModal';\n"
@@ -205,7 +195,6 @@ write_module(
     '\nexport default PurchasesPage;\n'
 )
 
-# --- 6. Inventory Batches & Mermas FIFO ---
 merma_modal_code = get_slice(7419, 7608).replace('const RegisterMermaModal =', 'export const RegisterMermaModal =')
 write_module(
     'pages/inventory/RegisterMermaModal.jsx',
@@ -224,7 +213,6 @@ write_module(
     '\nexport default InventoryBatchesPage;\n'
 )
 
-# --- 7. Cash Control (Control de Caja) ---
 open_cash_code = get_slice(5528, 5635).replace('const OpenCashModal =', 'export const OpenCashModal =')
 write_module(
     'pages/cash/OpenCashModal.jsx',
@@ -267,7 +255,6 @@ write_module(
     '\nexport default CashControlPage;\n'
 )
 
-# --- 8. POS (Punto de Venta) ---
 client_sel_code = get_slice(4598, 4896).replace('const ClientSelectModal =', 'export const ClientSelectModal =')
 write_module(
     'pages/pos/ClientSelectModal.jsx',
@@ -313,7 +300,6 @@ write_module(
     '\nexport default POSPage;\n'
 )
 
-# --- 9. Reports & Analytics ---
 rep_code = get_slice(8390, 9103).replace('const ReportsAnalyticsPage =', 'export const ReportsAnalyticsPage =')
 write_module(
     'pages/reports/ReportsAnalyticsPage.jsx',
@@ -322,7 +308,6 @@ write_module(
     '\nexport default ReportsAnalyticsPage;\n'
 )
 
-# --- 10. Audit Log ---
 audit_code = get_slice(9104, 9528).replace('const AuditLogPage =', 'export const AuditLogPage =')
 write_module(
     'pages/audit/AuditLogPage.jsx',
@@ -331,7 +316,6 @@ write_module(
     '\nexport default AuditLogPage;\n'
 )
 
-# --- 11. Scanner & Mobile ---
 scanner_modal_code = get_slice(9742, 10020).replace('const ScannerModal =', 'export const ScannerModal =')
 write_module(
     'pages/scanner/ScannerModal.jsx',
@@ -348,7 +332,6 @@ write_module(
     '\nexport default MobileScannerPage;\n'
 )
 
-# --- 12. Login ---
 login_code = get_slice(10479, 10539).replace('const LoginPage =', 'export const LoginPage =')
 write_module(
     'pages/login/LoginPage.jsx',
@@ -357,7 +340,6 @@ write_module(
     '\nexport default LoginPage;\n'
 )
 
-# --- 13. Layout: Sidebar & Header ---
 sidebar_code = get_slice(9529, 9708).replace('const Sidebar =', 'export const Sidebar =')
 write_module(
     'components/layout/Sidebar.jsx',
@@ -374,7 +356,6 @@ write_module(
     '\nexport default Header;\n'
 )
 
-# --- 14. MainLayout ---
 main_layout_code = get_slice(10577, 10796).replace('const MainLayout =', 'export const MainLayout =')
 main_layout_imports = compute_imports(main_layout_code, 'components/layout') + """import Sidebar from './Sidebar';
 import Header from './Header';
@@ -398,7 +379,6 @@ write_module(
     '\nexport default MainLayout;\n'
 )
 
-# --- 15. Root App.jsx ---
 app_code = """import React, { useState, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import MainLayout from './components/layout/MainLayout';

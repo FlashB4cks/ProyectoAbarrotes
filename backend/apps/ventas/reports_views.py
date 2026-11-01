@@ -9,7 +9,6 @@ from .models import Venta, DetalleVenta, SalidaLoteVenta
 from apps.inventario.models import LoteInventario, AjusteInventario
 from apps.autenticacion.permissions import IsAdminUserRole
 
-
 def parse_date_range(request):
     """
     Parsea parámetros de período o rango de fechas:
@@ -41,13 +40,12 @@ def parse_date_range(request):
         except ValueError:
             inicio = hoy - timedelta(days=30)
             fin = hoy
-    else: # 'todo' o por defecto
+    else:
         primera_venta = Venta.objects.order_by('fecha_hora').first()
         inicio = primera_venta.fecha_hora.date() if primera_venta else hoy - timedelta(days=30)
         fin = hoy
 
     return inicio, fin, periodo
-
 
 class ReporteFinancieroViewSet(viewsets.ViewSet):
     """
@@ -58,7 +56,6 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
     def list(self, request):
         inicio, fin, periodo = parse_date_range(request)
 
-        # Filtro base de ventas completadas en el rango
         ventas_qs = Venta.objects.filter(
             fecha_hora__date__gte=inicio,
             fecha_hora__date__lte=fin,
@@ -72,7 +69,6 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
 
         ticket_promedio = (total_ventas / total_transacciones) if total_transacciones > 0 else Decimal('0.00')
 
-        # Costo de Ventas (COGS) calculado a partir de las salidas FIFO de lotes
         salidas_qs = SalidaLoteVenta.objects.filter(
             detalle_venta__venta__in=ventas_qs
         ).select_related('lote', 'detalle_venta__venta')
@@ -85,7 +81,6 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
         utilidad_bruta = total_ventas - total_costo
         margen_porcentaje = float((utilidad_bruta / total_ventas) * 100) if total_ventas > Decimal('0.00') else 0.0
 
-        # Desglose por Método de Pago
         pagos_raw = ventas_qs.values('metodo_pago').annotate(
             total=Sum('total'),
             cantidad=Count('id_venta')
@@ -101,7 +96,6 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
                 'porcentaje': round(pct, 1)
             })
 
-        # Ventas por Categoría
         detalles_qs = DetalleVenta.objects.filter(venta__in=ventas_qs).select_related('producto__categoria')
         categorias_dict = {}
         for d in detalles_qs:
@@ -122,7 +116,6 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
             })
         ventas_por_categoria.sort(key=lambda x: x['total'], reverse=True)
 
-        # Top 10 Productos Más Vendidos
         top_prods_raw = detalles_qs.values(
             'producto__id_producto',
             'producto__nombre',
@@ -151,13 +144,12 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
                 'ganancia': float(ganancia_p),
             })
 
-        # Flujo Temporal Adaptativo para Gráficas de Inteligencia de Negocios (RF-07.2)
         flujo_temporal = []
         dias_es = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
         meses_es = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
         if periodo == 'hoy':
-            # Vista Intradiaria por Horas Comerciales (07:00 a 21:00)
+
             for h in range(7, 22):
                 hora_str = f"{h:02d}:00"
                 ventas_h = [v for v in ventas_qs if timezone.localtime(v.fecha_hora).hour == h]
@@ -174,7 +166,7 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
                 })
 
         elif periodo == 'anio':
-            # Vista Anual: Agrupación por Mes (Ene a Dic)
+
             anio_actual = inicio.year
             for m in range(1, 13):
                 ventas_m = [v for v in ventas_qs if v.fecha_hora.year == anio_actual and v.fecha_hora.month == m]
@@ -191,7 +183,7 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
                 })
 
         elif periodo == 'todo':
-            # Vista Histórica Completa: Agrupación por Mes/Año
+
             curr = inicio.replace(day=1)
             fin_mes = fin.replace(day=1)
             while curr <= fin_mes:
@@ -215,7 +207,7 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
                     curr = curr.replace(month=m + 1)
 
         else:
-            # Vista Diaria: 'semana', 'mes', 'personalizado'
+
             curr = inicio
             while curr <= fin:
                 ventas_dia = [v for v in ventas_qs if v.fecha_hora.date() == curr]
@@ -233,7 +225,6 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
                 })
                 curr += timedelta(days=1)
 
-        # Mermas Registradas en el período
         mermas_qs = AjusteInventario.objects.filter(
             fecha_ajuste__date__gte=inicio,
             fecha_ajuste__date__lte=fin
@@ -265,7 +256,6 @@ class ReporteFinancieroViewSet(viewsets.ViewSet):
             'flujo_temporal': flujo_temporal,
         }, status=status.HTTP_200_OK)
 
-
 class ReporteMermasFIFOViewSet(viewsets.ViewSet):
     """
     Informe de Auditoría y Mermas Evitadas mediante el algoritmo PEPS/FIFO (RF-07.2).
@@ -275,7 +265,6 @@ class ReporteMermasFIFOViewSet(viewsets.ViewSet):
     def list(self, request):
         hoy = timezone.localdate()
 
-        # Todas las salidas de lote efectuadas en ventas completadas
         salidas_fifo = SalidaLoteVenta.objects.filter(
             detalle_venta__venta__estado=Venta.EstadoVenta.COMPLETADA
         ).select_related('lote', 'lote__producto', 'detalle_venta')
@@ -290,13 +279,11 @@ class ReporteMermasFIFOViewSet(viewsets.ViewSet):
             Decimal('0.00')
         )
 
-        # Lotes que se agotaron o rotaron antes de expirar
         lotes_rotados_exitosamente = LoteInventario.objects.filter(
             fecha_vencimiento__gte=hoy,
             cantidad_actual__lt=F('cantidad_inicial')
         ).count()
 
-        # Mermas Reales Registradas (pérdidas efectivas)
         mermas_qs = AjusteInventario.objects.all()
         mermas_vencimiento = mermas_qs.filter(tipo=AjusteInventario.TipoAjuste.VENCIMIENTO)
         mermas_dano = mermas_qs.filter(tipo=AjusteInventario.TipoAjuste.ROTURA)
@@ -309,12 +296,9 @@ class ReporteMermasFIFOViewSet(viewsets.ViewSet):
 
         unidades_mermadas = mermas_qs.aggregate(u=Sum('cantidad'))['u'] or 0
 
-        # Tasa de Eficiencia de Preservación FIFO
-        # Eficiencia = (Valor Salvado por FIFO / (Valor Salvado + Pérdidas Reales)) * 100
         denominador = valor_costo_salvado + perdida_total_real
         tasa_eficiencia = float((valor_costo_salvado / denominador) * 100) if denominador > Decimal('0.00') else 100.0
 
-        # Estado del inventario actual en almacén (Semáforo Global)
         lotes_activos = LoteInventario.objects.filter(is_active=True, cantidad_actual__gt=0)
         limite_proximo = hoy + timedelta(days=30)
 
@@ -327,7 +311,6 @@ class ReporteMermasFIFOViewSet(viewsets.ViewSet):
         vigentes_count = lotes_activos.filter(fecha_vencimiento__gt=limite_proximo).count()
         vigentes_unidades = lotes_activos.filter(fecha_vencimiento__gt=limite_proximo).aggregate(u=Sum('cantidad_actual'))['u'] or 0
 
-        # Detalle de lotes que fueron rotados mediante FIFO con sus fechas
         historial_salidas_fifo = []
         for s in salidas_fifo.order_by('-fecha_descuento')[:15]:
             historial_salidas_fifo.append({

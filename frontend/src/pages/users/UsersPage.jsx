@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { Toast, ConfirmModal, CredentialsModal } from '../../components/common';
+import { Toast, ConfirmModal, CredentialsModal, Pagination, usePagination } from '../../components/common';
 
 import UserModal from './UserModal';
 import RolModal from './RolModal';
-/* ── COMPONENTE: GESTIÓN DE USUARIOS ── */
+
 export const UserTable = ({ users, onEdit, onToggleStatus, onNewUser }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -16,7 +16,7 @@ export const UserTable = ({ users, onEdit, onToggleStatus, onNewUser }) => {
 
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(u => 
+      result = result.filter(u =>
         (u.username && u.username.toLowerCase().includes(term)) ||
         (u.first_name && u.first_name.toLowerCase().includes(term)) ||
         (u.last_name && u.last_name.toLowerCase().includes(term)) ||
@@ -24,12 +24,24 @@ export const UserTable = ({ users, onEdit, onToggleStatus, onNewUser }) => {
       );
     }
 
-    // Prioridad a usuarios activos: los dados de baja van hasta abajo
     return result.sort((a, b) => {
       if (a.is_active === b.is_active) return 0;
       return a.is_active ? -1 : 1;
     });
   }, [users, searchTerm, statusFilter]);
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    paginatedItems: paginatedUsers,
+    totalItems
+  } = usePagination(filteredUsers, 10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, setCurrentPage]);
 
   return (
     <div className="card">
@@ -40,7 +52,7 @@ export const UserTable = ({ users, onEdit, onToggleStatus, onNewUser }) => {
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="select-status-filter">
             <option value="ALL">Todos los Estados</option>
-            <option value="ACTIVE">Solo Activos (Ocultar dados de baja)</option>
+            <option value="ACTIVE">Solo Activos</option>
             <option value="INACTIVE">Solo Dados de Baja</option>
           </select>
         </div>
@@ -62,7 +74,7 @@ export const UserTable = ({ users, onEdit, onToggleStatus, onNewUser }) => {
             {filteredUsers.length === 0 ? (
               <tr><td colSpan="5" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No se encontraron empleados.</td></tr>
             ) : (
-              filteredUsers.map((user) => (
+              paginatedUsers.map((user) => (
                 <tr key={user.id} className={!user.is_active ? 'row-disabled' : ''}>
                   <td><div className="user-name-cell"><span className="name-bold">{user.first_name} {user.last_name}</span><span className="email-sub">{user.email}</span></div></td>
                   <td><code className="user-code">@{user.username}</code></td>
@@ -82,24 +94,30 @@ export const UserTable = ({ users, onEdit, onToggleStatus, onNewUser }) => {
           </tbody>
         </table>
       </div>
+      <Pagination
+        currentPage={currentPage}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(newSize) => { setPageSize(newSize); setCurrentPage(1); }}
+        pageSizeOptions={[10, 20, 50, 100]}
+        itemName="empleados"
+      />
     </div>
   );
 };
 
-
 export const UsersPage = () => {
-  const [activeSubTab, setActiveSubTab] = useState('usuarios'); // 'usuarios' | 'roles'
+  const [activeSubTab, setActiveSubTab] = useState('usuarios');
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Modals de Usuarios
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [confirmUser, setConfirmUser] = useState(null);
   const [newCredentials, setNewCredentials] = useState(null);
 
-  // Modals de Roles
   const [isRolModalOpen, setIsRolModalOpen] = useState(false);
   const [editingRol, setEditingRol] = useState(null);
   const [confirmRol, setConfirmRol] = useState(null);
@@ -123,11 +141,10 @@ export const UsersPage = () => {
     }
   };
 
-  useEffect(() => { 
-    fetchData(); 
+  useEffect(() => {
+    fetchData();
   }, []);
 
-  /* ── GESTIÓN DE USUARIOS ── */
   const handleSaveUser = async (formData) => {
     try {
       if (editingUser) {
@@ -164,12 +181,11 @@ export const UsersPage = () => {
     }
   };
 
-  /* ── GESTIÓN DE ROLES ── */
   const filteredRoles = useMemo(() => {
     let result = [...roles];
     if (rolSearchTerm.trim()) {
       const term = rolSearchTerm.toLowerCase();
-      result = result.filter(r => 
+      result = result.filter(r =>
         (r.codigo && r.codigo.toLowerCase().includes(term)) ||
         (r.nombre && r.nombre.toLowerCase().includes(term)) ||
         (r.descripcion && r.descripcion.toLowerCase().includes(term)) ||
@@ -181,6 +197,19 @@ export const UsersPage = () => {
       return a.is_active ? -1 : 1;
     });
   }, [roles, rolSearchTerm]);
+
+  const {
+    currentPage: rolPage,
+    setCurrentPage: setRolPage,
+    pageSize: rolPageSize,
+    setPageSize: setRolPageSize,
+    paginatedItems: paginatedRoles,
+    totalItems: totalRoles
+  } = usePagination(filteredRoles, 10);
+
+  useEffect(() => {
+    setRolPage(1);
+  }, [rolSearchTerm, setRolPage]);
 
   const handleSaveRol = async (formData) => {
     try {
@@ -213,15 +242,15 @@ export const UsersPage = () => {
 
   return (
     <div className="view-panel">
-      {/* Sub-tabs de Empleados vs Roles */}
+
       <div className="tab-pill-group">
-        <button 
+        <button
           className={`tab-pill ${activeSubTab === 'usuarios' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('usuarios')}
         >
           Directorio de Empleados ({users.length})
         </button>
-        <button 
+        <button
           className={`tab-pill ${activeSubTab === 'roles' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('roles')}
         >
@@ -230,7 +259,7 @@ export const UsersPage = () => {
       </div>
 
       {activeSubTab === 'usuarios' && (
-        <UserTable 
+        <UserTable
           users={users}
           onEdit={(u) => { setEditingUser(u); setIsModalOpen(true); }}
           onToggleStatus={(u) => setConfirmUser(u)}
@@ -243,11 +272,11 @@ export const UsersPage = () => {
           <div className="card-header">
             <div className="search-and-filter-group">
               <div className="search-box">
-                <input 
-                  type="text" 
-                  placeholder="Buscar roles por código, nombre o descripción..." 
-                  value={rolSearchTerm} 
-                  onChange={(e) => setRolSearchTerm(e.target.value)} 
+                <input
+                  type="text"
+                  placeholder="Buscar roles por código, nombre o descripción..."
+                  value={rolSearchTerm}
+                  onChange={(e) => setRolSearchTerm(e.target.value)}
                 />
               </div>
             </div>
@@ -275,7 +304,7 @@ export const UsersPage = () => {
                 ) : filteredRoles.length === 0 ? (
                   <tr><td colSpan="7" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No se encontraron roles registrados.</td></tr>
                 ) : (
-                  filteredRoles.map((r) => (
+                  paginatedRoles.map((r) => (
                     <tr key={r.id_rol} className={!r.is_active ? 'row-disabled' : ''}>
                       <td>
                         <span className={`role-badge role-${r.codigo?.toLowerCase()}`}>
@@ -306,8 +335,8 @@ export const UsersPage = () => {
                           <button className="btn-icon-btn btn-edit" onClick={() => { setEditingRol(r); setIsRolModalOpen(true); }}>
                             Editar
                           </button>
-                          <button 
-                            className={`btn-icon-btn ${r.is_active ? 'btn-danger-solid' : 'btn-success-solid'}`} 
+                          <button
+                            className={`btn-icon-btn ${r.is_active ? 'btn-danger-solid' : 'btn-success-solid'}`}
                             onClick={() => setConfirmRol(r)}
                           >
                             {r.is_active ? 'Desactivar' : 'Activar'}
@@ -320,40 +349,47 @@ export const UsersPage = () => {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={rolPage}
+            totalItems={totalRoles}
+            pageSize={rolPageSize}
+            onPageChange={setRolPage}
+            onPageSizeChange={(newSize) => { setRolPageSize(newSize); setRolPage(1); }}
+            pageSizeOptions={[10, 20, 50]}
+            itemName="roles"
+          />
         </div>
       )}
 
-      {/* Modals de Usuario */}
-      <UserModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSave={handleSaveUser} 
-        editingUser={editingUser} 
+      <UserModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveUser}
+        editingUser={editingUser}
         users={users}
         roles={roles}
       />
       <CredentialsModal isOpen={Boolean(newCredentials)} onClose={() => setNewCredentials(null)} credentials={newCredentials} />
-      <ConfirmModal 
-        isOpen={Boolean(confirmUser)} 
-        onClose={() => setConfirmUser(null)} 
-        onConfirm={handleConfirmToggleStatus} 
+      <ConfirmModal
+        isOpen={Boolean(confirmUser)}
+        onClose={() => setConfirmUser(null)}
+        onConfirm={handleConfirmToggleStatus}
         title={confirmUser?.is_active ? 'Dar de Baja' : 'Reactivar Empleado'}
         message={`¿Está seguro de ${confirmUser?.is_active ? 'dar de baja' : 'reactivar'} a @${confirmUser?.username}?`}
         isDanger={confirmUser?.is_active}
         confirmText={confirmUser?.is_active ? 'Dar de Baja' : 'Reactivar'}
       />
 
-      {/* Modals de Rol */}
-      <RolModal 
-        isOpen={isRolModalOpen} 
-        onClose={() => setIsRolModalOpen(false)} 
-        onSave={handleSaveRol} 
-        editingRol={editingRol} 
+      <RolModal
+        isOpen={isRolModalOpen}
+        onClose={() => setIsRolModalOpen(false)}
+        onSave={handleSaveRol}
+        editingRol={editingRol}
       />
-      <ConfirmModal 
-        isOpen={Boolean(confirmRol)} 
-        onClose={() => setConfirmRol(null)} 
-        onConfirm={handleConfirmToggleRol} 
+      <ConfirmModal
+        isOpen={Boolean(confirmRol)}
+        onClose={() => setConfirmRol(null)}
+        onConfirm={handleConfirmToggleRol}
         title={confirmRol?.is_active ? 'Desactivar Rol' : 'Activar Rol'}
         message={`¿Está seguro de ${confirmRol?.is_active ? 'desactivar' : 'activar'} el rol "${confirmRol?.nombre}"?`}
         isDanger={confirmRol?.is_active}
@@ -364,6 +400,5 @@ export const UsersPage = () => {
     </div>
   );
 };
-
 
 export default UsersPage;

@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { playScannerBeep } from '../../utils/audio';
 import { IconBarcode, IconCheck, IconSmartphone } from '../../components/icons/Icons';
 
-/* ── MODAL: CONFIGURACIÓN DE LECTOR DE CÓDIGOS DE BARRAS (PISTOLA USB Y APP MÓVIL) ── */
 export const ScannerModal = ({ isOpen, onClose, session, onGenerateSession, connectedDevice }) => {
-  const [activeTab, setActiveTab] = useState('usb'); // 'usb' como pestaña predeterminada
+  const [activeTab, setActiveTab] = useState('usb');
   const [testInput, setTestInput] = useState('');
   const [testResult, setTestResult] = useState(null);
 
@@ -17,7 +16,6 @@ export const ScannerModal = ({ isOpen, onClose, session, onGenerateSession, conn
 
   if (!isOpen) return null;
 
-  // Prueba en vivo para validar detección por pistola USB o App Móvil (ambos emulan HID)
   const handleTestKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -59,38 +57,37 @@ export const ScannerModal = ({ isOpen, onClose, session, onGenerateSession, conn
         </div>
 
         <div className="modal-body">
-          {/* Selector de modo: Solo Pistola USB y App Móvil */}
+
           <div className="tab-pill-group" style={{ marginBottom: '14px', display: 'flex', gap: '8px' }}>
-            <button 
+            <button
               type="button"
               className={`tab-pill ${activeTab === 'usb' ? 'active' : ''}`}
               onClick={() => setActiveTab('usb')}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
               <IconBarcode size={14} />
-              <span>Pistola USB Física</span>
+              <span>Pistola Lectora USB</span>
             </button>
-            <button 
+            <button
               type="button"
               className={`tab-pill ${activeTab === 'app_celular' ? 'active' : ''}`}
               onClick={() => setActiveTab('app_celular')}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
               <IconSmartphone size={14} />
-              <span>App Móvil (Barcode to PC)</span>
+              <span>Aplicación Móvil / Celular</span>
             </button>
           </div>
 
-          {/* PESTAÑA 1: PISTOLA LECTORA FÍSICA USB */}
           {activeTab === 'usb' && (
             <div>
               <div className="info-banner" style={{ marginBottom: '12px', padding: '10px 14px' }}>
                 <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <IconBarcode size={15} />
-                  <span>Pistola Lectora de Códigos USB (Plug & Play HID)</span>
+                  <span>Pistola Lectora de Códigos USB</span>
                 </strong>
                 <p style={{ margin: '4px 0 0 0', fontSize: '12px', lineHeight: '1.4' }}>
-                  Conecta cualquier pistola o escáner de códigos de barras a un puerto USB de la computadora. Windows la detecta de forma inmediata como teclado emulado (HID) sin requerir controladores o software adicional.
+                  Conecta cualquier pistola o escáner de códigos de barras a un puerto USB de la computadora. Windows la detecta de forma inmediata como teclado emulado sin requerir controladores o software adicional.
                 </p>
               </div>
 
@@ -128,13 +125,12 @@ export const ScannerModal = ({ isOpen, onClose, session, onGenerateSession, conn
             </div>
           )}
 
-          {/* PESTAÑA 2: APP MÓVIL (BARCODE TO PC) */}
           {activeTab === 'app_celular' && (
             <div>
               <div className="info-banner" style={{ marginBottom: '12px', padding: '10px 14px' }}>
                 <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <IconSmartphone size={15} />
-                  <span>Usar la Aplicación Móvil "Barcode to PC" (Android / iOS)</span>
+                  <span>Vincular Cámara del Teléfono Celular</span>
                 </strong>
                 <p style={{ margin: '4px 0 0 0', fontSize: '12px', lineHeight: '1.4' }}>
                   Convierte la cámara de tu teléfono celular en un lector de códigos inalámbrico que envía las lecturas directamente a NohemySys emulando un teclado físico:
@@ -184,7 +180,6 @@ export const ScannerModal = ({ isOpen, onClose, session, onGenerateSession, conn
             </div>
           )}
 
-          {/* BANCO DE PRUEBA EN VIVO (COMÚN PARA AMBAS OPCIONES) */}
           <div className="scanner-live-box">
             <div className="scanner-laser-line"></div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
@@ -203,9 +198,9 @@ export const ScannerModal = ({ isOpen, onClose, session, onGenerateSession, conn
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <input 
-                type="text" 
-                value={testInput} 
+              <input
+                type="text"
+                value={testInput}
                 onChange={(e) => setTestInput(e.target.value)}
                 onKeyDown={handleTestKeyDown}
                 placeholder="Apunta y dispara aquí para probar..."
@@ -225,8 +220,8 @@ export const ScannerModal = ({ isOpen, onClose, session, onGenerateSession, conn
                 autoFocus
               />
               {testResult && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => { setTestResult(null); setTestInput(''); }}
                   style={{ background: 'transparent', border: '1px solid #555', color: '#bbb', borderRadius: '6px', padding: '6px 10px', cursor: 'pointer', fontSize: '11.5px' }}
                   title="Limpiar"
@@ -280,6 +275,5 @@ export const ScannerModal = ({ isOpen, onClose, session, onGenerateSession, conn
     </div>
   );
 };
-
 
 export default ScannerModal;

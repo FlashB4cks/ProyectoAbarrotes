@@ -41,11 +41,9 @@ KNOWN_CONSTRAINTS = {
     'proveedores_nombre_empresa_key': ('nombre_empresa', 'Ya existe un proveedor registrado con este nombre o razón social.'),
 }
 
-
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
-    # Manejar errores de integridad de base de datos no capturados por DRF (IntegrityError de PostgreSQL/Django)
     if response is None and isinstance(exc, IntegrityError):
         err_str = str(exc)
         matched_field = 'non_field_errors'
@@ -88,18 +86,16 @@ def custom_exception_handler(exc, context):
         if isinstance(response.data, dict) and 'detail' in response.data:
             custom_response_data['message'] = str(response.data['detail'])
         elif isinstance(response.data, dict):
-            # Extraer el primer error y formatearlo amigablemente
+
             for key, val in response.data.items():
                 raw_msg = val[0] if isinstance(val, list) and len(val) > 0 else str(val)
                 label = FIELD_LABELS.get(key, key.capitalize())
 
-                # Traducir mensajes estándar en inglés de unicidad de DRF
                 if 'already exists' in raw_msg.lower() or 'unique' in getattr(val[0], 'code', ''):
                     msg = f"Ya existe un registro con este {label}."
                 else:
                     msg = raw_msg
 
-                # Si el mensaje ya menciona explícitamente el campo o "ya existe", no duplicar prefijo
                 if (msg.lower().startswith('ya existe') or 
                     msg.lower().startswith(label.lower()) or 
                     msg.lower().startswith('el ') or 

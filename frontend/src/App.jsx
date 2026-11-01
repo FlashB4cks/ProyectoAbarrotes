@@ -12,7 +12,6 @@ export function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Si la ruta contiene #scanner, se renderiza la vista de cámara móvil para el teléfono
   if (route.includes('scanner')) {
     return <MobileScannerPage />;
   }

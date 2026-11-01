@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-/* ── MODAL: CREACIÓN / EDICIÓN DE MARCA ── */
 export const MarcaModal = ({ isOpen, onClose, onSave, editingMarca }) => {
   const [formData, setFormData] = useState({ nombre: '', descripcion: '' });
   const [errors, setErrors] = useState({});
@@ -69,11 +68,11 @@ export const MarcaModal = ({ isOpen, onClose, onSave, editingMarca }) => {
           )}
           <div className="form-group" style={{ marginBottom: '14px' }}>
             <label>Nombre de la Marca <span className="req">*</span></label>
-            <input 
-              type="text" 
-              name="nombre" 
-              value={formData.nombre} 
-              onChange={handleChange} 
+            <input
+              type="text"
+              name="nombre"
+              value={formData.nombre}
+              onChange={handleChange}
               placeholder="Coca-Cola, Bimbo, Malher..."
               className={errors.nombre ? 'input-error' : ''}
               autoFocus
@@ -82,11 +81,11 @@ export const MarcaModal = ({ isOpen, onClose, onSave, editingMarca }) => {
           </div>
           <div className="form-group" style={{ marginBottom: '14px' }}>
             <label>Descripción / Observaciones</label>
-            <textarea 
-              name="descripcion" 
-              rows="3" 
-              value={formData.descripcion} 
-              onChange={handleChange} 
+            <textarea
+              name="descripcion"
+              rows="3"
+              value={formData.descripcion}
+              onChange={handleChange}
               placeholder="Descripción o fabricante de la marca..."
               style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13.5px', resize: 'vertical' }}
             />

@@ -13,7 +13,6 @@ class Departamento(models.Model):
     def __str__(self):
         return self.nombre
 
-
 class Municipio(models.Model):
     id_municipio = models.BigAutoField(primary_key=True)
     departamento = models.ForeignKey(Departamento, on_delete=models.CASCADE, related_name='municipios', verbose_name="Departamento")
@@ -28,7 +27,6 @@ class Municipio(models.Model):
     def __str__(self):
         return f"{self.nombre}, {self.departamento.nombre}"
 
-
 class Direccion(models.Model):
     id_direccion = models.BigAutoField(primary_key=True)
     municipio = models.ForeignKey(Municipio, on_delete=models.PROTECT, related_name='direcciones', verbose_name="Municipio")
@@ -42,7 +40,6 @@ class Direccion(models.Model):
 
     def __str__(self):
         return f"{self.linea1} ({self.municipio.nombre})"
-
 
 class Categoria(models.Model):
     id_categoria = models.BigAutoField(primary_key=True)
@@ -60,7 +57,6 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
 
-
 class UnidadMedida(models.Model):
     id_unidad = models.BigAutoField(primary_key=True)
     nombre = models.CharField(max_length=50, unique=True, verbose_name="Nombre de Unidad")
@@ -75,7 +71,6 @@ class UnidadMedida(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.simbolo})"
-
 
 class Proveedor(models.Model):
     id_proveedor = models.BigAutoField(primary_key=True)
@@ -98,7 +93,6 @@ class Proveedor(models.Model):
     def __str__(self):
         return self.nombre_empresa
 
-
 class Marca(models.Model):
     id_marca = models.BigAutoField(primary_key=True)
     nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre de la Marca")
@@ -114,7 +108,6 @@ class Marca(models.Model):
 
     def __str__(self):
         return self.nombre
-
 
 class Producto(models.Model):
     id_producto = models.BigAutoField(primary_key=True)

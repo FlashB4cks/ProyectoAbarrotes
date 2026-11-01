@@ -1,6 +1,5 @@
 import React from 'react';
 
-/* ── ERROR BOUNDARY PARA MÓDULOS INDEPENDIENTES ── */
 export class ModuleErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -22,7 +21,7 @@ export class ModuleErrorBoundary extends React.Component {
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', maxWidth: '520px', margin: '0 auto 16px', lineHeight: '1.5' }}>
             {this.state.error?.message || 'Error inesperado durante la inicialización.'}
           </p>
-          <button 
+          <button
             type="button"
             onClick={() => this.setState({ hasError: false, error: null })}
             className="btn-outline"

@@ -43,7 +43,6 @@ def generar_contrasena_segura(longitud=12):
     digitos = string.digits
     simbolos = "!@#$%&*"
 
-    # Asegurar al menos uno de cada tipo
     password = [
         secrets.choice(minusculas),
         secrets.choice(mayusculas),
@@ -71,7 +70,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         username_or_email = attrs.get('username', '').strip()
 
-        # Permitir inicio de sesión tanto por Nombre de Usuario como por Correo Electrónico
         if '@' in username_or_email:
             user_obj = User.objects.filter(email__iexact=username_or_email).first()
             if user_obj:
@@ -82,7 +80,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 if user_obj:
                     attrs['username'] = user_obj.username
 
-        # Verificar si el usuario está dado de baja (Borrado Lógico)
         user_to_check = User.objects.filter(username=attrs.get('username')).first()
         if user_to_check and not user_to_check.is_active:
             raise serializers.ValidationError({
@@ -146,7 +143,6 @@ class RolSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Ya existe un rol registrado con este nombre.')
         return val
 
-
 class UserSerializer(serializers.ModelSerializer):
     rol_display = serializers.CharField(source='get_rol_display', read_only=True)
 
@@ -176,7 +172,7 @@ class UserAdminSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
-        # Validar Nombres y Apellidos Obligatorios
+
         first_name = attrs.get('first_name', getattr(self.instance, 'first_name', '')).strip()
         last_name = attrs.get('last_name', getattr(self.instance, 'last_name', '')).strip()
         if not first_name:
@@ -184,11 +180,9 @@ class UserAdminSerializer(serializers.ModelSerializer):
         if not last_name:
             raise serializers.ValidationError({'last_name': 'El apellido del empleado es obligatorio.'})
 
-        # Validar que nombre y apellido no sean idénticos
         if first_name.lower() == last_name.lower():
             raise serializers.ValidationError({'last_name': 'El nombre y el apellido no pueden ser idénticos.'})
 
-        # Validar duplicidad de empleado con el mismo nombre y apellido
         existing_emp = User.objects.filter(first_name__iexact=first_name, last_name__iexact=last_name)
         if self.instance:
             existing_emp = existing_emp.exclude(pk=self.instance.pk)
@@ -197,7 +191,6 @@ class UserAdminSerializer(serializers.ModelSerializer):
                 'first_name': f'Ya existe un empleado registrado con el nombre completo "{first_name} {last_name}".'
             })
 
-        # Validar DPI (Obligatorio al crear nuevo empleado; opcional en edición si no se cambia)
         dpi = attrs.get('dpi', getattr(self.instance, 'dpi', '') or '')
         if dpi:
             dpi = str(dpi).strip()
@@ -211,7 +204,6 @@ class UserAdminSerializer(serializers.ModelSerializer):
         elif not self.instance:
             raise serializers.ValidationError({'dpi': 'El DPI del empleado es obligatorio.'})
 
-        # Validar Correo Electrónico (si se provee)
         email = attrs.get('email', getattr(self.instance, 'email', '') or '')
         if email:
             email = str(email).strip().lower()
@@ -221,7 +213,6 @@ class UserAdminSerializer(serializers.ModelSerializer):
             if existing_email.exists():
                 raise serializers.ValidationError({'email': 'Ya existe un empleado registrado con este correo electrónico.'})
 
-        # Validar NIT (si se provee)
         nit = attrs.get('nit', getattr(self.instance, 'nit', '') or '')
         if nit:
             nit = str(nit).strip().upper()
@@ -232,7 +223,6 @@ class UserAdminSerializer(serializers.ModelSerializer):
                 if existing_nit.exists():
                     raise serializers.ValidationError({'nit': 'Ya existe un empleado registrado con este número de NIT.'})
 
-        # Validar Teléfono (Opcional, pero si se provee debe contener máximo 8 dígitos numéricos)
         telefono = attrs.get('telefono', '').strip() if attrs.get('telefono') else ''
         if telefono:
             if not telefono.isdigit():
@@ -246,15 +236,12 @@ class UserAdminSerializer(serializers.ModelSerializer):
         first_name = validated_data.get('first_name', '')
         last_name = validated_data.get('last_name', '')
 
-        # Generar Username automático basado en inicial + apellidos
         username = generar_nombre_usuario(first_name, last_name)
         validated_data['username'] = username
 
-        # Generar correo si no fue provisto
         if not validated_data.get('email'):
             validated_data['email'] = f"{username}@nohemy.com"
 
-        # Generar contraseña segura automática
         contrasena_segura = generar_contrasena_segura(12)
         validated_data.pop('password', None)
 
@@ -264,7 +251,6 @@ class UserAdminSerializer(serializers.ModelSerializer):
         user.set_password(contrasena_segura)
         user.save()
 
-        # Adjuntar la contraseña generada a la instancia para que el serializer la retorne al frontend
         user.contrasena_generada = contrasena_segura
         return user
 
@@ -309,7 +295,6 @@ class CambiarPasswordSerializer(serializers.Serializer):
         if not any(c.isdigit() for c in nueva_password):
             raise serializers.ValidationError({'nueva_password': 'La contraseña debe contener al menos un número.'})
 
-        # Validar similitud con el usuario, nombre y apellido
         nueva_lower = nueva_password.lower()
         if user.username.lower() in nueva_lower:
             raise serializers.ValidationError({'nueva_password': 'La contraseña no puede contener tu nombre de usuario.'})

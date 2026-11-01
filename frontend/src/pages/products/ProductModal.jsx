@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
 import { playScannerBeep } from '../../utils/audio';
 
-import MarcaModal from './MarcaModal';
-import UnidadModal from './UnidadModal';
 import SupplierModal from '../suppliers/SupplierModal';
-/* ── MODAL: CREACIÓN / EDICIÓN DE PRODUCTO ── */
+
 export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categorias, unidades, marcas = [], proveedores, onOpenScanner, onRefreshProveedores }) => {
   const [formData, setFormData] = useState({
     codigo_barras: '',
@@ -61,7 +59,6 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
     setErrors({});
   }, [editingProduct, isOpen, categorias, unidades, marcas, proveedores]);
 
-  // Escuchar código de barras transmitido desde celular o escáner mientras el modal está abierto
   useEffect(() => {
     const handleBarcodeEvent = (e) => {
       if (isOpen && e.detail?.code) {
@@ -139,8 +136,8 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '6px' }}>
                 <label style={{ margin: 0 }}>Código de Barras <span className="req">*</span></label>
                 {onOpenScanner && (
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={onOpenScanner}
                     className="btn-scanner-pill"
                     style={{ padding: '2px 10px', fontSize: '11.5px', whiteSpace: 'nowrap' }}
@@ -150,10 +147,10 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
                   </button>
                 )}
               </div>
-              <input 
-                type="text" 
-                name="codigo_barras" 
-                value={formData.codigo_barras} 
+              <input
+                type="text"
+                name="codigo_barras"
+                value={formData.codigo_barras}
                 onChange={handleChange}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -176,10 +173,10 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
 
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
               <label>Nombre del Producto <span className="req">*</span></label>
-              <input 
-                type="text" 
-                name="nombre" 
-                value={formData.nombre} 
+              <input
+                type="text"
+                name="nombre"
+                value={formData.nombre}
                 onChange={handleChange}
                 className={errors.nombre ? 'input-error' : ''}
               />
@@ -214,13 +211,13 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
             </div>
 
             <div className="form-group">
-              <label>Precio Venta (GTQ Q) <span className="req">*</span></label>
-              <input 
-                type="number" 
+              <label>Precio Venta <span className="req">*</span></label>
+              <input
+                type="number"
                 step="0.01"
-                name="precio_venta" 
-                value={formData.precio_venta} 
-                onChange={handleChange} 
+                name="precio_venta"
+                value={formData.precio_venta}
+                onChange={handleChange}
                 placeholder="0.00"
                 className={errors.precio_venta ? 'input-error' : ''}
               />
@@ -229,11 +226,11 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
 
             <div className="form-group">
               <label>Stock Mínimo para Alerta <span className="req">*</span></label>
-              <input 
-                type="number" 
-                name="stock_minimo" 
-                value={formData.stock_minimo} 
-                onChange={handleChange} 
+              <input
+                type="number"
+                name="stock_minimo"
+                value={formData.stock_minimo}
+                onChange={handleChange}
                 placeholder="10"
                 className={errors.stock_minimo ? 'input-error' : ''}
               />
@@ -269,11 +266,11 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
 
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
               <label>Descripción Corta / Detalles</label>
-              <input 
-                type="text" 
-                name="descripcion" 
-                value={formData.descripcion} 
-                onChange={handleChange} 
+              <input
+                type="text"
+                name="descripcion"
+                value={formData.descripcion}
+                onChange={handleChange}
                 placeholder="Presentación, características o sabor"
               />
             </div>
@@ -297,6 +294,5 @@ export const ProductModal = ({ isOpen, onClose, onSave, editingProduct, categori
     </div>
   );
 };
-
 
 export default ProductModal;

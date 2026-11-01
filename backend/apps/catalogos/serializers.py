@@ -22,7 +22,6 @@ class MarcaSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Ya existe una marca registrada con este nombre.')
         return val
 
-
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categoria
@@ -43,7 +42,6 @@ class CategoriaSerializer(serializers.ModelSerializer):
         if qs.exists():
             raise serializers.ValidationError('Ya existe una categoría registrada con este nombre.')
         return val
-
 
 class UnidadMedidaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -77,7 +75,6 @@ class UnidadMedidaSerializer(serializers.ModelSerializer):
         if qs.exists():
             raise serializers.ValidationError('Ya existe una unidad de medida registrada con este símbolo.')
         return val
-
 
 class ProveedorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -138,13 +135,14 @@ class ProveedorSerializer(serializers.ModelSerializer):
             return v
         return value
 
-
 class ProductoSerializer(serializers.ModelSerializer):
     categoria_nombre = serializers.ReadOnlyField(source='categoria.nombre')
     marca_nombre = serializers.ReadOnlyField(source='marca.nombre')
     unidad_simbolo = serializers.ReadOnlyField(source='unidad_medida.simbolo')
     proveedor_empresa = serializers.ReadOnlyField(source='proveedor.nombre_empresa')
     es_stock_bajo = serializers.SerializerMethodField()
+    descuento_lote = serializers.SerializerMethodField()
+    precio_con_descuento = serializers.SerializerMethodField()
 
     class Meta:
         model = Producto
@@ -162,6 +160,8 @@ class ProductoSerializer(serializers.ModelSerializer):
             'proveedor',
             'proveedor_empresa',
             'precio_venta',
+            'descuento_lote',
+            'precio_con_descuento',
             'stock_total',
             'stock_minimo',
             'es_stock_bajo',
@@ -176,12 +176,24 @@ class ProductoSerializer(serializers.ModelSerializer):
     def get_es_stock_bajo(self, obj):
         return obj.stock_total <= obj.stock_minimo
 
+    def get_descuento_lote(self, obj):
+        lote = obj.lotes.filter(cantidad_actual__gt=0, is_active=True).order_by('fecha_vencimiento', 'fecha_ingreso').first()
+        if lote and lote.descuento_porcentaje and lote.descuento_porcentaje > 0:
+            return float(lote.descuento_porcentaje)
+        return 0.0
+
+    def get_precio_con_descuento(self, obj):
+        desc = self.get_descuento_lote(obj)
+        p_base = float(obj.precio_venta)
+        if desc > 0:
+            return round(p_base * (1.0 - desc / 100.0), 2)
+        return p_base
+
     def validate_codigo_barras(self, value):
         val = value.strip()
         if not val:
             raise serializers.ValidationError('El código de barras es obligatorio.')
-        
-        # Verificar unicidad respetando edición de la misma instancia
+
         instance = getattr(self, 'instance', None)
         qs = Producto.objects.filter(codigo_barras__iexact=val)
         if instance:

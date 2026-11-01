@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
 import { IconLock } from '../../components/icons/Icons';
 
-/* ── MODAL: ARQUEO Y CIERRE DEFINITIVO DE CAJA ── */
 export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion }) => {
   const [montoReal, setMontoReal] = useState('');
   const [observaciones, setObservaciones] = useState('');
@@ -10,7 +9,6 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
   const [error, setError] = useState('');
   const [showDenomCalc, setShowDenomCalc] = useState(false);
 
-  // Conteo por denominación en Quetzales
   const [denominaciones, setDenominaciones] = useState({
     b200: 0,
     b100: 0,
@@ -38,7 +36,7 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
     const q = Math.max(0, parseInt(qty, 10) || 0);
     const updated = { ...denominaciones, [field]: q };
     setDenominaciones(updated);
-    const totalCalc = 
+    const totalCalc =
       updated.b200 * 200 +
       updated.b100 * 100 +
       updated.b50 * 50 +
@@ -98,7 +96,6 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
           <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '70vh', overflowY: 'auto' }}>
             {error && <div className="alert-message alert-danger">{error}</div>}
 
-            {/* Desglose de cuadre esperado */}
             <div style={{ background: 'var(--input-bg)', padding: '14px', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
               <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
                 Balance Teórico del Turno (Efectivo)
@@ -132,7 +129,6 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
               </div>
             </div>
 
-            {/* Conciliación no efectivo */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
               <div style={{ background: 'var(--input-bg)', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--card-border)' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Ventas Tarjeta (Vouchers):</span>
@@ -144,7 +140,6 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
               </div>
             </div>
 
-            {/* Entrada de Efectivo Contado */}
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
@@ -176,7 +171,6 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
               </div>
             </div>
 
-            {/* Calculadora de denominaciones desplegable */}
             {showDenomCalc && (
               <div style={{ background: 'var(--input-bg)', padding: '12px', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)', display: 'block', marginBottom: '8px' }}>
@@ -210,7 +204,6 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
               </div>
             )}
 
-            {/* Indicador de Diferencia / Arqueo */}
             {montoReal !== '' && (
               <div style={{
                 padding: '12px 16px',
@@ -218,10 +211,10 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                background: Math.abs(diferencia) < 0.01 
-                  ? 'rgba(16, 185, 129, 0.12)' 
-                  : diferencia > 0 
-                    ? 'rgba(245, 158, 11, 0.12)' 
+                background: Math.abs(diferencia) < 0.01
+                  ? 'rgba(16, 185, 129, 0.12)'
+                  : diferencia > 0
+                    ? 'rgba(245, 158, 11, 0.12)'
                     : 'rgba(239, 68, 68, 0.12)',
                 border: `1px solid ${Math.abs(diferencia) < 0.01 ? '#10b981' : diferencia > 0 ? '#f59e0b' : '#ef4444'}`
               }}>
@@ -230,10 +223,10 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
                     Resultado del Arqueo:
                   </span>
                   <strong style={{ fontSize: '13.5px', color: Math.abs(diferencia) < 0.01 ? '#10b981' : diferencia > 0 ? '#f59e0b' : '#ef4444' }}>
-                    {Math.abs(diferencia) < 0.01 
-                      ? '✓ Caja Cuadrada Exacta' 
-                      : diferencia > 0 
-                        ? `▲ Sobrante en Gaveta (+Q ${diferencia.toFixed(2)})` 
+                    {Math.abs(diferencia) < 0.01
+                      ? '✓ Caja Cuadrada Exacta'
+                      : diferencia > 0
+                        ? `▲ Sobrante en Gaveta (+Q ${diferencia.toFixed(2)})`
                         : `▼ Faltante en Gaveta (-Q ${Math.abs(diferencia).toFixed(2)})`}
                   </strong>
                 </div>
@@ -273,6 +266,5 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
     </div>
   );
 };
-
 
 export default CloseCashModal;

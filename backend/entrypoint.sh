@@ -1,7 +1,6 @@
 #!/bin/sh
 set -e
 
-# Esperar a que la base de datos este lista antes de proceder con migraciones
 if [ "$RUN_MIGRATIONS" = "true" ]; then
   echo "Verificando disponibilidad de conexion con la base de datos..."
   python -c "

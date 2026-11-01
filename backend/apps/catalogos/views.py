@@ -38,7 +38,6 @@ class MarcaViewSet(viewsets.ModelViewSet):
             'is_active': marca.is_active
         }, status=status.HTTP_200_OK)
 
-
 class CategoriaViewSet(viewsets.ModelViewSet):
     queryset = Categoria.objects.all().order_by('-is_active', 'nombre')
     serializer_class = CategoriaSerializer
@@ -63,7 +62,6 @@ class CategoriaViewSet(viewsets.ModelViewSet):
             'is_active': categoria.is_active
         }, status=status.HTTP_200_OK)
 
-
 class UnidadMedidaViewSet(viewsets.ModelViewSet):
     queryset = UnidadMedida.objects.all().order_by('-is_active', 'nombre')
     serializer_class = UnidadMedidaSerializer
@@ -80,7 +78,6 @@ class UnidadMedidaViewSet(viewsets.ModelViewSet):
             'message': f'Unidad de medida "{unidad.nombre}" {estado_str} exitosamente.',
             'is_active': unidad.is_active
         }, status=status.HTTP_200_OK)
-
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all().order_by('-is_active', 'nombre_empresa')
@@ -137,7 +134,6 @@ class ProveedorViewSet(viewsets.ModelViewSet):
             'message': f'Proveedor "{proveedor.nombre_empresa}" {estado_str} exitosamente.',
             'is_active': proveedor.is_active
         }, status=status.HTTP_200_OK)
-
 
 class ProductoViewSet(viewsets.ModelViewSet):
     queryset = Producto.objects.select_related('categoria', 'marca', 'unidad_medida', 'proveedor').all().order_by('-is_active', 'nombre')

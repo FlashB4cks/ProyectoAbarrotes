@@ -19,7 +19,6 @@ class Rol(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.codigo})"
 
-
 class User(AbstractUser):
     class Role(models.TextChoices):
         ADMINISTRADOR = 'ADMINISTRADOR', 'Administrador'

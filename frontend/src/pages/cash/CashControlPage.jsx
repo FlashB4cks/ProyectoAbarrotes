@@ -1,26 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { Toast } from '../../components/common';
+import { Toast, Pagination, usePagination } from '../../components/common';
 import { IconBank, IconCalendar, IconCashRegister, IconCheck, IconLock, IconPlus, IconPrinter, IconReceipt, IconRefresh } from '../../components/icons/Icons';
 
 import OpenCashModal from './OpenCashModal';
 import CashMovementModal from './CashMovementModal';
 import CloseCashModal from './CloseCashModal';
 import CashTicketModal from './CashTicketModal';
-/* ── COMPONENTE PRINCIPAL: CONTROL DE CAJA, ARQUEO Y TURNOS (RF-05 / CAJA) ── */
+
 export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
-  const [activeSubTab, setActiveSubTab] = useState('turno_actual'); // 'turno_actual' | 'historial'
+  const [activeSubTab, setActiveSubTab] = useState('turno_actual');
   const [cajaData, setCajaData] = useState(null);
   const [historialCajas, setHistorialCajas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
-  // Modales
   const [isOpenCashModalOpen, setIsOpenCashModalOpen] = useState(false);
   const [isCashMovementModalOpen, setIsCashMovementModalOpen] = useState(false);
   const [movementInitialType, setMovementInitialType] = useState('INGRESO');
   const [isCloseCashModalOpen, setIsCloseCashModalOpen] = useState(false);
   const [selectedCorteTicket, setSelectedCorteTicket] = useState(null);
+
+  const {
+    currentPage: currentHistorialPage,
+    setCurrentPage: setCurrentHistorialPage,
+    pageSize: historialPageSize,
+    setPageSize: setHistorialPageSize,
+    paginatedItems: paginatedHistorialCajas,
+    totalItems: totalHistorialCajas
+  } = usePagination(historialCajas, 10);
 
   const fetchCajaData = async () => {
     setLoading(true);
@@ -72,9 +80,18 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
   const metricas = cajaData?.metricas || {};
   const movimientos = cajaData?.movimientos || [];
 
+  const {
+    currentPage: currentMovPage,
+    setCurrentPage: setCurrentMovPage,
+    pageSize: movPageSize,
+    setPageSize: setMovPageSize,
+    paginatedItems: paginatedMovimientos,
+    totalItems: totalMovimientos
+  } = usePagination(movimientos, 10);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Sub-pestañas de control de caja */}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ display: 'inline-flex', background: 'var(--input-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
           <button
@@ -121,7 +138,7 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
         <div>
           {isAbierta ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Barra de Estado del Turno */}
+
               <div style={{
                 background: 'linear-gradient(135deg, rgba(184, 134, 11, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%)',
                 border: '1px solid rgba(184, 134, 11, 0.3)',
@@ -185,7 +202,6 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
                 </div>
               </div>
 
-              {/* 4 Tarjetas KPI */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
                 <div className="card" style={{ padding: '16px 20px', borderLeft: '4px solid #10b981' }}>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
@@ -238,7 +254,6 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
                 </div>
               </div>
 
-              {/* Desglose por Método de Pago */}
               <div className="card" style={{ padding: '16px 20px' }}>
                 <h4 style={{ margin: '0 0 12px 0', fontSize: '14.5px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <IconBank size={18} />
@@ -246,13 +261,13 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                   <div style={{ background: 'var(--input-bg)', padding: '12px', borderRadius: '8px', borderLeft: '3px solid #10b981' }}>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Efectivo (Entró a gaveta)</span>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Efectivo</span>
                     <strong style={{ fontSize: '18px', color: '#10b981' }}>
                       Q {Number(metricas.ventas_efectivo || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </strong>
                   </div>
                   <div style={{ background: 'var(--input-bg)', padding: '12px', borderRadius: '8px', borderLeft: '3px solid #3b82f6' }}>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Tarjeta (Vouchers POS)</span>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block' }}>Tarjeta</span>
                     <strong style={{ fontSize: '18px', color: '#3b82f6' }}>
                       Q {Number(metricas.ventas_tarjeta || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </strong>
@@ -266,7 +281,6 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
                 </div>
               </div>
 
-              {/* Tabla de Movimientos de Caja del Turno */}
               <div className="card" style={{ padding: '16px 20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                   <h4 style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -297,9 +311,9 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
                           </td>
                         </tr>
                       ) : (
-                        movimientos.map(m => {
+                        paginatedMovimientos.map(m => {
                           const isIngreso = m.tipo === 'INGRESO';
-                          const horaStr = m.fecha_hora 
+                          const horaStr = m.fecha_hora
                             ? new Date(m.fecha_hora).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                             : '';
                           return (
@@ -337,10 +351,19 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
                     </tbody>
                   </table>
                 </div>
+                <Pagination
+                  currentPage={currentMovPage}
+                  totalItems={totalMovimientos}
+                  pageSize={movPageSize}
+                  onPageChange={setCurrentMovPage}
+                  onPageSizeChange={(newSize) => { setMovPageSize(newSize); setCurrentMovPage(1); }}
+                  pageSizeOptions={[10, 20, 50]}
+                  itemName="movimientos"
+                />
               </div>
             </div>
           ) : (
-            /* Estado de Caja CERRADA: Bienvenida para Apertura */
+
             <div className="card" style={{ padding: '48px 24px', textAlign: 'center', maxWidth: '640px', margin: '20px auto' }}>
               <div style={{
                 width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(184, 134, 11, 0.15)',
@@ -367,7 +390,7 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
           )}
         </div>
       ) : (
-        /* Pestaña: Historial de Cortes Anteriores */
+
         <div className="card" style={{ padding: '16px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
             <div>
@@ -416,12 +439,11 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
                     </td>
                   </tr>
                 ) : (
-                  historialCajas.map(c => {
+                  paginatedHistorialCajas.map(c => {
                     const dif = parseFloat(c.diferencia || 0);
                     const isCuadrada = Math.abs(dif) < 0.01;
                     const isAbiertaCaja = c.estado === 'ABIERTA';
 
-                    // Formateo de fecha y hora
                     const fechaObj = c.fecha_apertura ? new Date(c.fecha_apertura) : null;
                     const fechaAperturaStr = fechaObj ? fechaObj.toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
                     const horaAperturaStr = fechaObj ? fechaObj.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -513,7 +535,7 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
                             title="Ver e imprimir comprobante térmico"
                           >
                             <IconPrinter size={13} />
-                            <span>Ticket</span>
+                            <span>Comprobante</span>
                           </button>
                         </td>
                       </tr>
@@ -523,10 +545,19 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={currentHistorialPage}
+            totalItems={totalHistorialCajas}
+            pageSize={historialPageSize}
+            onPageChange={setCurrentHistorialPage}
+            onPageSizeChange={(newSize) => { setHistorialPageSize(newSize); setCurrentHistorialPage(1); }}
+            pageSizeOptions={[10, 20, 50, 100]}
+            itemName="cortes de caja"
+          />
         </div>
       )}
 
-      {/* Modales de Control de Caja */}
       <OpenCashModal
         isOpen={isOpenCashModalOpen}
         onClose={() => setIsOpenCashModalOpen(false)}
@@ -558,6 +589,5 @@ export const CashControlPage = ({ isEmbedded = false, onOpenScanner }) => {
     </div>
   );
 };
-
 
 export default CashControlPage;

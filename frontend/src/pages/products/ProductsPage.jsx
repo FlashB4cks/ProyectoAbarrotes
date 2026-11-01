@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { Toast, ConfirmModal } from '../../components/common';
+import { Toast, ConfirmModal, Pagination, usePagination } from '../../components/common';
 
 import ProductModal from './ProductModal';
 import MarcaModal from './MarcaModal';
 import UnidadModal from './UnidadModal';
 import CategoriaModal from './CategoriaModal';
-import SupplierModal from '../suppliers/SupplierModal';
-/* ── COMPONENTE: GESTIÓN DE PRODUCTOS, MARCAS Y UNIDADES ── */
+
 export const ProductsPage = ({ onOpenScanner }) => {
-  const [activeSubTab, setActiveSubTab] = useState('productos'); // 'productos' | 'marcas' | 'unidades'
+  const [activeSubTab, setActiveSubTab] = useState('productos');
   const [products, setProducts] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [unidades, setUnidades] = useState([]);
@@ -23,24 +22,20 @@ export const ProductsPage = ({ onOpenScanner }) => {
   const [statusFilter, setStatusFilter] = useState('ACTIVE');
   const [stockFilter, setStockFilter] = useState('ALL');
 
-  // Modals de Productos
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [confirmProduct, setConfirmProduct] = useState(null);
 
-  // Modals de Marcas
   const [isMarcaModalOpen, setIsMarcaModalOpen] = useState(false);
   const [editingMarca, setEditingMarca] = useState(null);
   const [confirmMarca, setConfirmMarca] = useState(null);
   const [marcaSearchTerm, setMarcaSearchTerm] = useState('');
 
-  // Modals de Categorías
   const [isCategoriaModalOpen, setIsCategoriaModalOpen] = useState(false);
   const [editingCategoria, setEditingCategoria] = useState(null);
   const [confirmCategoria, setConfirmCategoria] = useState(null);
   const [categoriaSearchTerm, setCategoriaSearchTerm] = useState('');
 
-  // Modals de Unidades
   const [isUnidadModalOpen, setIsUnidadModalOpen] = useState(false);
   const [editingUnidad, setEditingUnidad] = useState(null);
   const [confirmUnidad, setConfirmUnidad] = useState(null);
@@ -74,7 +69,6 @@ export const ProductsPage = ({ onOpenScanner }) => {
     fetchData();
   }, []);
 
-  // Si se escanea un código de barras en la vista de productos sin ningún modal abierto, filtra el producto al instante
   useEffect(() => {
     const handleBarcodeEvent = (e) => {
       if (!isModalOpen && !isMarcaModalOpen && !isUnidadModalOpen && e.detail?.code) {
@@ -86,7 +80,6 @@ export const ProductsPage = ({ onOpenScanner }) => {
     return () => window.removeEventListener('nohemysys:barcode', handleBarcodeEvent);
   }, [isModalOpen, isMarcaModalOpen, isUnidadModalOpen]);
 
-  // Búsqueda concatenada de productos (nombre, código de barras, marca, descripción, categoría, proveedor)
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
@@ -109,7 +102,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
 
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(p => 
+      result = result.filter(p =>
         (p.nombre && p.nombre.toLowerCase().includes(term)) ||
         (p.codigo_barras && p.codigo_barras.toLowerCase().includes(term)) ||
         (p.descripcion && p.descripcion.toLowerCase().includes(term)) ||
@@ -119,19 +112,30 @@ export const ProductsPage = ({ onOpenScanner }) => {
       );
     }
 
-    // Prioridad a productos activos: los dados de baja van hasta abajo
     return result.sort((a, b) => {
       if (a.is_active === b.is_active) return 0;
       return a.is_active ? -1 : 1;
     });
   }, [products, searchTerm, categoryFilter, marcaFilter, statusFilter, stockFilter]);
 
-  // Filtro de Marcas
+  const {
+    currentPage: currentProdPage,
+    setCurrentPage: setCurrentProdPage,
+    pageSize: prodPageSize,
+    setPageSize: setProdPageSize,
+    paginatedItems: paginatedProducts,
+    totalItems: totalFilteredProducts
+  } = usePagination(filteredProducts, 10);
+
+  useEffect(() => {
+    setCurrentProdPage(1);
+  }, [searchTerm, categoryFilter, marcaFilter, statusFilter, stockFilter, setCurrentProdPage]);
+
   const filteredMarcas = useMemo(() => {
     let result = [...marcas];
     if (marcaSearchTerm.trim()) {
       const term = marcaSearchTerm.toLowerCase();
-      result = result.filter(m => 
+      result = result.filter(m =>
         (m.nombre && m.nombre.toLowerCase().includes(term)) ||
         (m.descripcion && m.descripcion.toLowerCase().includes(term))
       );
@@ -142,12 +146,11 @@ export const ProductsPage = ({ onOpenScanner }) => {
     });
   }, [marcas, marcaSearchTerm]);
 
-  // Filtro de Categorías
   const filteredCategorias = useMemo(() => {
     let result = [...categorias];
     if (categoriaSearchTerm.trim()) {
       const term = categoriaSearchTerm.toLowerCase();
-      result = result.filter(c => 
+      result = result.filter(c =>
         (c.nombre && c.nombre.toLowerCase().includes(term)) ||
         (c.descripcion && c.descripcion.toLowerCase().includes(term))
       );
@@ -158,12 +161,11 @@ export const ProductsPage = ({ onOpenScanner }) => {
     });
   }, [categorias, categoriaSearchTerm]);
 
-  // Filtro de Unidades
   const filteredUnidades = useMemo(() => {
     let result = [...unidades];
     if (unidadSearchTerm.trim()) {
       const term = unidadSearchTerm.toLowerCase();
-      result = result.filter(u => 
+      result = result.filter(u =>
         (u.nombre && u.nombre.toLowerCase().includes(term)) ||
         (u.simbolo && u.simbolo.toLowerCase().includes(term))
       );
@@ -174,7 +176,45 @@ export const ProductsPage = ({ onOpenScanner }) => {
     });
   }, [unidades, unidadSearchTerm]);
 
-  /* ── OPERACIONES DE PRODUCTOS ── */
+  const {
+    currentPage: currentCatPage,
+    setCurrentPage: setCurrentCatPage,
+    pageSize: catPageSize,
+    setPageSize: setCatPageSize,
+    paginatedItems: paginatedCategorias,
+    totalItems: totalFilteredCategorias
+  } = usePagination(filteredCategorias, 10);
+
+  useEffect(() => {
+    setCurrentCatPage(1);
+  }, [categoriaSearchTerm, setCurrentCatPage]);
+
+  const {
+    currentPage: currentMarcaPage,
+    setCurrentPage: setCurrentMarcaPage,
+    pageSize: marcaPageSize,
+    setPageSize: setMarcaPageSize,
+    paginatedItems: paginatedMarcas,
+    totalItems: totalFilteredMarcas
+  } = usePagination(filteredMarcas, 10);
+
+  useEffect(() => {
+    setCurrentMarcaPage(1);
+  }, [marcaSearchTerm, setCurrentMarcaPage]);
+
+  const {
+    currentPage: currentUnidadPage,
+    setCurrentPage: setCurrentUnidadPage,
+    pageSize: unidadPageSize,
+    setPageSize: setUnidadPageSize,
+    paginatedItems: paginatedUnidades,
+    totalItems: totalFilteredUnidades
+  } = usePagination(filteredUnidades, 10);
+
+  useEffect(() => {
+    setCurrentUnidadPage(1);
+  }, [unidadSearchTerm, setCurrentUnidadPage]);
+
   const handleNewProduct = () => {
     setEditingProduct(null);
     setIsModalOpen(true);
@@ -214,7 +254,6 @@ export const ProductsPage = ({ onOpenScanner }) => {
     }
   };
 
-  /* ── OPERACIONES DE MARCAS ── */
   const handleSaveMarca = async (data) => {
     try {
       if (editingMarca) {
@@ -244,7 +283,6 @@ export const ProductsPage = ({ onOpenScanner }) => {
     }
   };
 
-  /* ── OPERACIONES DE CATEGORÍAS ── */
   const handleSaveCategoria = async (data) => {
     try {
       if (editingCategoria) {
@@ -274,7 +312,6 @@ export const ProductsPage = ({ onOpenScanner }) => {
     }
   };
 
-  /* ── OPERACIONES DE UNIDADES ── */
   const handleSaveUnidad = async (data) => {
     try {
       if (editingUnidad) {
@@ -306,27 +343,27 @@ export const ProductsPage = ({ onOpenScanner }) => {
 
   return (
     <div className="view-panel">
-      {/* Pestañas secundarias de catálogo */}
+
       <div className="tab-pill-group">
-        <button 
+        <button
           className={`tab-pill ${activeSubTab === 'productos' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('productos')}
         >
           Catálogo de Productos ({products.length})
         </button>
-        <button 
+        <button
           className={`tab-pill ${activeSubTab === 'categorias' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('categorias')}
         >
           Gestión de Categorías ({categorias.length})
         </button>
-        <button 
+        <button
           className={`tab-pill ${activeSubTab === 'marcas' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('marcas')}
         >
           Gestión de Marcas ({marcas.length})
         </button>
-        <button 
+        <button
           className={`tab-pill ${activeSubTab === 'unidades' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('unidades')}
         >
@@ -334,22 +371,21 @@ export const ProductsPage = ({ onOpenScanner }) => {
         </button>
       </div>
 
-      {/* SUBTAB: PRODUCTOS */}
       {activeSubTab === 'productos' && (
         <div className="card">
           <div className="card-header" style={{ flexWrap: 'wrap' }}>
             <div className="search-and-filter-group" style={{ maxWidth: '100%' }}>
               <div className="search-box">
-                <input 
-                  type="text" 
-                  placeholder="Buscar por Marca, Producto, Código, Descripción, Proveedor..." 
+                <input
+                  type="text"
+                  placeholder="Buscar por Marca, Producto, Código, Descripción, Proveedor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
 
-              <select 
-                value={categoryFilter} 
+              <select
+                value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="select-status-filter"
               >
@@ -357,8 +393,8 @@ export const ProductsPage = ({ onOpenScanner }) => {
                 {categorias.map(c => <option key={c.id_categoria} value={c.id_categoria}>{c.nombre}</option>)}
               </select>
 
-              <select 
-                value={marcaFilter} 
+              <select
+                value={marcaFilter}
                 onChange={(e) => setMarcaFilter(e.target.value)}
                 className="select-status-filter"
               >
@@ -366,8 +402,8 @@ export const ProductsPage = ({ onOpenScanner }) => {
                 {marcas.map(m => <option key={m.id_marca} value={m.id_marca}>{m.nombre}</option>)}
               </select>
 
-              <select 
-                value={stockFilter} 
+              <select
+                value={stockFilter}
                 onChange={(e) => setStockFilter(e.target.value)}
                 className="select-status-filter"
               >
@@ -376,8 +412,8 @@ export const ProductsPage = ({ onOpenScanner }) => {
                 <option value="OUT">Solo Agotados</option>
               </select>
 
-              <select 
-                value={statusFilter} 
+              <select
+                value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="select-status-filter"
               >
@@ -396,13 +432,13 @@ export const ProductsPage = ({ onOpenScanner }) => {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Código de Barras</th>
-                  <th>Producto / Marca</th>
-                  <th>Categoría</th>
-                  <th>Precio Venta</th>
-                  <th>Stock Actual</th>
-                  <th>Estado Stock</th>
-                  <th className="text-right">Acciones</th>
+                  <th style={{ width: '15%' }}>Código de Barras</th>
+                  <th style={{ width: '28%' }}>Producto / Marca</th>
+                  <th style={{ width: '13%' }}>Categoría</th>
+                  <th style={{ width: '11%' }}>Precio Venta</th>
+                  <th style={{ width: '10%' }}>Stock Actual</th>
+                  <th style={{ width: '11%' }}>Estado Stock</th>
+                  <th className="text-right" style={{ width: '12%' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -411,7 +447,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
                 ) : filteredProducts.length === 0 ? (
                   <tr><td colSpan="7" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No se encontraron productos con los filtros aplicados.</td></tr>
                 ) : (
-                  filteredProducts.map((p) => {
+                  paginatedProducts.map((p) => {
                     const isStockLow = p.stock_total <= p.stock_minimo && p.stock_total > 0;
                     const isOut = p.stock_total === 0;
 
@@ -449,7 +485,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
                           {isOut ? (
                             <span className="stock-badge stock-danger">○ Agotado</span>
                           ) : isStockLow ? (
-                            <span className="stock-badge stock-warning">● Stock Bajo (Mín: {p.stock_minimo})</span>
+                            <span className="stock-badge stock-warning" title={`Stock mínimo: ${p.stock_minimo}`}>● Stock Bajo</span>
                           ) : (
                             <span className="stock-badge stock-success">● Stock Normal</span>
                           )}
@@ -457,8 +493,8 @@ export const ProductsPage = ({ onOpenScanner }) => {
                         <td>
                           <div className="actions-cell">
                             <button className="btn-icon-btn btn-edit" onClick={() => handleEditProduct(p)}>Editar</button>
-                            <button 
-                              className={`btn-icon-btn ${p.is_active ? 'btn-danger-solid' : 'btn-success-solid'}`} 
+                            <button
+                              className={`btn-icon-btn ${p.is_active ? 'btn-danger-solid' : 'btn-success-solid'}`}
                               onClick={() => setConfirmProduct(p)}
                             >
                               {p.is_active ? 'Dar de Baja' : 'Reactivar'}
@@ -472,18 +508,27 @@ export const ProductsPage = ({ onOpenScanner }) => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={currentProdPage}
+            totalItems={totalFilteredProducts}
+            pageSize={prodPageSize}
+            onPageChange={setCurrentProdPage}
+            onPageSizeChange={(newSize) => { setProdPageSize(newSize); setCurrentProdPage(1); }}
+            pageSizeOptions={[10, 20, 50, 100]}
+            itemName="productos"
+          />
         </div>
       )}
 
-      {/* SUBTAB: CATEGORIAS */}
       {activeSubTab === 'categorias' && (
         <div className="card">
           <div className="card-header">
             <div className="search-and-filter-group">
               <div className="search-box">
-                <input 
-                  type="text" 
-                  placeholder="Buscar categorías por nombre o descripción..." 
+                <input
+                  type="text"
+                  placeholder="Buscar categorías por nombre o descripción..."
                   value={categoriaSearchTerm}
                   onChange={(e) => setCategoriaSearchTerm(e.target.value)}
                 />
@@ -498,17 +543,17 @@ export const ProductsPage = ({ onOpenScanner }) => {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Nombre de Categoría</th>
-                  <th>Descripción</th>
-                  <th>Estado</th>
-                  <th className="text-right">Acciones</th>
+                  <th style={{ width: '26%' }}>Nombre de Categoría</th>
+                  <th style={{ width: '48%' }}>Descripción</th>
+                  <th style={{ width: '12%' }}>Estado</th>
+                  <th className="text-right" style={{ width: '14%' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCategorias.length === 0 ? (
                   <tr><td colSpan="4" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No se encontraron categorías registradas.</td></tr>
                 ) : (
-                  filteredCategorias.map((c) => (
+                  paginatedCategorias.map((c) => (
                     <tr key={c.id_categoria} className={!c.is_active ? 'row-disabled' : ''}>
                       <td>
                         <strong style={{ fontSize: '14.5px', color: 'var(--text-main)' }}>{c.nombre}</strong>
@@ -526,7 +571,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
                           <button className="btn-icon-btn btn-edit" onClick={() => { setEditingCategoria(c); setIsCategoriaModalOpen(true); }}>
                             Editar
                           </button>
-                          <button 
+                          <button
                             className={`btn-icon-btn ${c.is_active ? 'btn-danger-solid' : 'btn-success-solid'}`}
                             onClick={() => setConfirmCategoria(c)}
                           >
@@ -540,18 +585,26 @@ export const ProductsPage = ({ onOpenScanner }) => {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={currentCatPage}
+            totalItems={totalFilteredCategorias}
+            pageSize={catPageSize}
+            onPageChange={setCurrentCatPage}
+            onPageSizeChange={(newSize) => { setCatPageSize(newSize); setCurrentCatPage(1); }}
+            pageSizeOptions={[10, 20, 50]}
+            itemName="categorías"
+          />
         </div>
       )}
 
-      {/* SUBTAB: MARCAS */}
       {activeSubTab === 'marcas' && (
         <div className="card">
           <div className="card-header">
             <div className="search-and-filter-group">
               <div className="search-box">
-                <input 
-                  type="text" 
-                  placeholder="Buscar marcas por nombre o descripción..." 
+                <input
+                  type="text"
+                  placeholder="Buscar marcas por nombre o descripción..."
                   value={marcaSearchTerm}
                   onChange={(e) => setMarcaSearchTerm(e.target.value)}
                 />
@@ -566,17 +619,17 @@ export const ProductsPage = ({ onOpenScanner }) => {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Nombre de Marca</th>
-                  <th>Descripción</th>
-                  <th>Estado</th>
-                  <th className="text-right">Acciones</th>
+                  <th style={{ width: '26%' }}>Nombre de Marca</th>
+                  <th style={{ width: '48%' }}>Descripción</th>
+                  <th style={{ width: '12%' }}>Estado</th>
+                  <th className="text-right" style={{ width: '14%' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredMarcas.length === 0 ? (
                   <tr><td colSpan="4" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No se encontraron marcas registradas.</td></tr>
                 ) : (
-                  filteredMarcas.map((m) => (
+                  paginatedMarcas.map((m) => (
                     <tr key={m.id_marca} className={!m.is_active ? 'row-disabled' : ''}>
                       <td>
                         <strong style={{ fontSize: '14.5px', color: 'var(--text-main)' }}>{m.nombre}</strong>
@@ -594,7 +647,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
                           <button className="btn-icon-btn btn-edit" onClick={() => { setEditingMarca(m); setIsMarcaModalOpen(true); }}>
                             Editar
                           </button>
-                          <button 
+                          <button
                             className={`btn-icon-btn ${m.is_active ? 'btn-danger-solid' : 'btn-success-solid'}`}
                             onClick={() => setConfirmMarca(m)}
                           >
@@ -608,18 +661,26 @@ export const ProductsPage = ({ onOpenScanner }) => {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={currentMarcaPage}
+            totalItems={totalFilteredMarcas}
+            pageSize={marcaPageSize}
+            onPageChange={setCurrentMarcaPage}
+            onPageSizeChange={(newSize) => { setMarcaPageSize(newSize); setCurrentMarcaPage(1); }}
+            pageSizeOptions={[10, 20, 50]}
+            itemName="marcas"
+          />
         </div>
       )}
 
-      {/* SUBTAB: UNIDADES DE MEDIDA */}
       {activeSubTab === 'unidades' && (
         <div className="card">
           <div className="card-header">
             <div className="search-and-filter-group">
               <div className="search-box">
-                <input 
-                  type="text" 
-                  placeholder="Buscar unidad por nombre o símbolo..." 
+                <input
+                  type="text"
+                  placeholder="Buscar unidad por nombre o símbolo..."
                   value={unidadSearchTerm}
                   onChange={(e) => setUnidadSearchTerm(e.target.value)}
                 />
@@ -634,17 +695,17 @@ export const ProductsPage = ({ onOpenScanner }) => {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Nombre de la Unidad</th>
-                  <th>Símbolo / Abreviatura</th>
-                  <th>Estado</th>
-                  <th className="text-right">Acciones</th>
+                  <th style={{ width: '28%' }}>Nombre de la Unidad</th>
+                  <th style={{ width: '38%' }}>Símbolo / Abreviatura</th>
+                  <th style={{ width: '18%' }}>Estado</th>
+                  <th className="text-right" style={{ width: '16%' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUnidades.length === 0 ? (
                   <tr><td colSpan="4" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No se encontraron unidades de medida.</td></tr>
                 ) : (
-                  filteredUnidades.map((u) => (
+                  paginatedUnidades.map((u) => (
                     <tr key={u.id_unidad} className={!u.is_active ? 'row-disabled' : ''}>
                       <td>
                         <strong style={{ fontSize: '14.5px', color: 'var(--text-main)' }}>{u.nombre}</strong>
@@ -662,7 +723,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
                           <button className="btn-icon-btn btn-edit" onClick={() => { setEditingUnidad(u); setIsUnidadModalOpen(true); }}>
                             Editar
                           </button>
-                          <button 
+                          <button
                             className={`btn-icon-btn ${u.is_active ? 'btn-danger-solid' : 'btn-success-solid'}`}
                             onClick={() => setConfirmUnidad(u)}
                           >
@@ -676,11 +737,19 @@ export const ProductsPage = ({ onOpenScanner }) => {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={currentUnidadPage}
+            totalItems={totalFilteredUnidades}
+            pageSize={unidadPageSize}
+            onPageChange={setCurrentUnidadPage}
+            onPageSizeChange={(newSize) => { setUnidadPageSize(newSize); setCurrentUnidadPage(1); }}
+            pageSizeOptions={[10, 20, 50]}
+            itemName="unidades"
+          />
         </div>
       )}
 
-      {/* Modals de Producto */}
-      <ProductModal 
+      <ProductModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveProduct}
@@ -693,7 +762,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
         onRefreshProveedores={fetchData}
       />
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={Boolean(confirmProduct)}
         onClose={() => setConfirmProduct(null)}
         onConfirm={handleConfirmToggleStatus}
@@ -703,15 +772,14 @@ export const ProductsPage = ({ onOpenScanner }) => {
         confirmText={confirmProduct?.is_active ? 'Dar de Baja' : 'Reactivar'}
       />
 
-      {/* Modals de Categoría */}
-      <CategoriaModal 
+      <CategoriaModal
         isOpen={isCategoriaModalOpen}
         onClose={() => setIsCategoriaModalOpen(false)}
         onSave={handleSaveCategoria}
         editingCategoria={editingCategoria}
       />
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={Boolean(confirmCategoria)}
         onClose={() => setConfirmCategoria(null)}
         onConfirm={handleToggleCategoria}
@@ -721,15 +789,14 @@ export const ProductsPage = ({ onOpenScanner }) => {
         confirmText={confirmCategoria?.is_active ? 'Dar de Baja' : 'Reactivar'}
       />
 
-      {/* Modals de Marca */}
-      <MarcaModal 
+      <MarcaModal
         isOpen={isMarcaModalOpen}
         onClose={() => setIsMarcaModalOpen(false)}
         onSave={handleSaveMarca}
         editingMarca={editingMarca}
       />
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={Boolean(confirmMarca)}
         onClose={() => setConfirmMarca(null)}
         onConfirm={handleToggleMarca}
@@ -739,15 +806,14 @@ export const ProductsPage = ({ onOpenScanner }) => {
         confirmText={confirmMarca?.is_active ? 'Dar de Baja' : 'Reactivar'}
       />
 
-      {/* Modals de Unidad de Medida */}
-      <UnidadModal 
+      <UnidadModal
         isOpen={isUnidadModalOpen}
         onClose={() => setIsUnidadModalOpen(false)}
         onSave={handleSaveUnidad}
         editingUnidad={editingUnidad}
       />
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={Boolean(confirmUnidad)}
         onClose={() => setConfirmUnidad(null)}
         onConfirm={handleToggleUnidad}
@@ -761,6 +827,5 @@ export const ProductsPage = ({ onOpenScanner }) => {
     </div>
   );
 };
-
 
 export default ProductsPage;

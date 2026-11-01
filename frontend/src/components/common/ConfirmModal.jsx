@@ -1,6 +1,5 @@
 import React from 'react';
 
-/* ── MODAL: CONFIRMACIÓN GENÉRICO ── */
 export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, isDanger = false, confirmText = 'Confirmar' }) => {
   if (!isOpen) return null;
 
@@ -24,6 +23,5 @@ export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, isDan
     </div>
   );
 };
-
 
 export default ConfirmModal;

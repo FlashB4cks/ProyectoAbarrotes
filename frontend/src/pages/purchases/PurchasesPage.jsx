@@ -1,28 +1,25 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { Toast, ConfirmModal } from '../../components/common';
+import { Toast, ConfirmModal, Pagination, usePagination } from '../../components/common';
 
 import NewPurchaseModal from './NewPurchaseModal';
 import PurchaseDetailModal from './PurchaseDetailModal';
-/* ── COMPONENTE: GESTIÓN DE COMPRAS E INVENTARIO ── */
+
 export const PurchasesPage = () => {
-  const [activeSubTab, setActiveSubTab] = useState('compras'); // 'compras' | 'lotes'
+  const [activeSubTab, setActiveSubTab] = useState('compras');
   const [compras, setCompras] = useState([]);
   const [lotes, setLotes] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters for Compras
   const [searchTerm, setSearchTerm] = useState('');
   const [proveedorFilter, setProveedorFilter] = useState('ALL');
-  const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, RECIBIDA, ANULADA
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
-  // Filters for Lotes
   const [loteSearchTerm, setLoteSearchTerm] = useState('');
-  const [loteVencFilter, setLoteVencFilter] = useState('ALL'); // ALL, BUENO, ALERTA, POR_VENCER, VENCIDO
+  const [loteVencFilter, setLoteVencFilter] = useState('ALL');
 
-  // Modals
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [detailCompra, setDetailCompra] = useState(null);
   const [confirmAnular, setConfirmAnular] = useState(null);
@@ -52,7 +49,6 @@ export const PurchasesPage = () => {
     fetchData();
   }, []);
 
-  // Filter & sort purchases: Active (RECIBIDA) first, ANULADA at the bottom!
   const filteredCompras = useMemo(() => {
     let result = [...compras];
 
@@ -66,14 +62,13 @@ export const PurchasesPage = () => {
 
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(c => 
+      result = result.filter(c =>
         (c.numero_comprobante && c.numero_comprobante.toLowerCase().includes(term)) ||
         (c.proveedor_nombre && c.proveedor_nombre.toLowerCase().includes(term)) ||
         (c.usuario_nombre && c.usuario_nombre.toLowerCase().includes(term))
       );
     }
 
-    // Prioridad a compras activas (RECIBIDA); anuladas pasan hasta abajo
     return result.sort((a, b) => {
       const aActive = a.estado === 'RECIBIDA';
       const bActive = b.estado === 'RECIBIDA';
@@ -84,7 +79,6 @@ export const PurchasesPage = () => {
     });
   }, [compras, searchTerm, proveedorFilter, statusFilter]);
 
-  // Filter lotes
   const filteredLotes = useMemo(() => {
     let result = [...lotes];
 
@@ -94,7 +88,7 @@ export const PurchasesPage = () => {
 
     if (loteSearchTerm.trim()) {
       const term = loteSearchTerm.toLowerCase();
-      result = result.filter(l => 
+      result = result.filter(l =>
         (l.numero_lote && l.numero_lote.toLowerCase().includes(term)) ||
         (l.producto_nombre && l.producto_nombre.toLowerCase().includes(term)) ||
         (l.producto_codigo && l.producto_codigo.toLowerCase().includes(term)) ||
@@ -102,7 +96,6 @@ export const PurchasesPage = () => {
       );
     }
 
-    // Ordenar lotes: activos con stock primero, y por proximidad de vencimiento
     return result.sort((a, b) => {
       if (a.is_active === b.is_active) {
         if (a.dias_para_vencer !== null && b.dias_para_vencer !== null) {
@@ -113,6 +106,32 @@ export const PurchasesPage = () => {
       return a.is_active ? -1 : 1;
     });
   }, [lotes, loteSearchTerm, loteVencFilter]);
+
+  const {
+    currentPage: currentCompraPage,
+    setCurrentPage: setCurrentCompraPage,
+    pageSize: compraPageSize,
+    setPageSize: setCompraPageSize,
+    paginatedItems: paginatedCompras,
+    totalItems: totalComprasFiltered
+  } = usePagination(filteredCompras, 10);
+
+  useEffect(() => {
+    setCurrentCompraPage(1);
+  }, [searchTerm, proveedorFilter, statusFilter, setCurrentCompraPage]);
+
+  const {
+    currentPage: currentLotePage,
+    setCurrentPage: setCurrentLotePage,
+    pageSize: lotePageSize,
+    setPageSize: setLotePageSize,
+    paginatedItems: paginatedLotes,
+    totalItems: totalLotesFiltered
+  } = usePagination(filteredLotes, 10);
+
+  useEffect(() => {
+    setCurrentLotePage(1);
+  }, [loteSearchTerm, loteVencFilter, setCurrentLotePage]);
 
   const handleConfirmAnular = async () => {
     if (!confirmAnular) return;
@@ -129,15 +148,15 @@ export const PurchasesPage = () => {
 
   return (
     <div className="view-panel">
-      {/* Pestañas secundarias: Compras vs Lotes */}
+
       <div className="tab-pill-group">
-        <button 
+        <button
           className={`tab-pill ${activeSubTab === 'compras' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('compras')}
         >
           Facturas de Compra ({compras.length})
         </button>
-        <button 
+        <button
           className={`tab-pill ${activeSubTab === 'lotes' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('lotes')}
         >
@@ -150,16 +169,16 @@ export const PurchasesPage = () => {
           <div className="card-header" style={{ flexWrap: 'wrap' }}>
             <div className="search-and-filter-group" style={{ maxWidth: '100%' }}>
               <div className="search-box">
-                <input 
-                  type="text" 
-                  placeholder="Buscar por Comprobante, Proveedor o Usuario..." 
+                <input
+                  type="text"
+                  placeholder="Buscar por Comprobante, Proveedor o Usuario..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
 
-              <select 
-                value={proveedorFilter} 
+              <select
+                value={proveedorFilter}
                 onChange={(e) => setProveedorFilter(e.target.value)}
                 className="select-status-filter"
               >
@@ -169,13 +188,13 @@ export const PurchasesPage = () => {
                 ))}
               </select>
 
-              <select 
-                value={statusFilter} 
+              <select
+                value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="select-status-filter"
               >
                 <option value="ALL">Todos los Estados</option>
-                <option value="RECIBIDA">Solo Recibidas (Activas)</option>
+                <option value="RECIBIDA">Solo Recibidas</option>
                 <option value="ANULADA">Solo Anuladas</option>
               </select>
             </div>
@@ -205,7 +224,7 @@ export const PurchasesPage = () => {
                 ) : filteredCompras.length === 0 ? (
                   <tr><td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No se encontraron compras con los filtros seleccionados.</td></tr>
                 ) : (
-                  filteredCompras.map((compra) => {
+                  paginatedCompras.map((compra) => {
                     const isAnulada = compra.estado === 'ANULADA';
                     const fechaStr = compra.fecha_compra ? new Date(compra.fecha_compra).toLocaleDateString('es-GT', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
@@ -246,8 +265,8 @@ export const PurchasesPage = () => {
                               Ver Detalle
                             </button>
                             {!isAnulada && (
-                              <button 
-                                className="btn-icon-btn btn-danger-solid" 
+                              <button
+                                className="btn-icon-btn btn-danger-solid"
                                 onClick={() => setConfirmAnular(compra)}
                               >
                                 Anular
@@ -262,6 +281,16 @@ export const PurchasesPage = () => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={currentCompraPage}
+            totalItems={totalComprasFiltered}
+            pageSize={compraPageSize}
+            onPageChange={setCurrentCompraPage}
+            onPageSizeChange={(newSize) => { setCompraPageSize(newSize); setCurrentCompraPage(1); }}
+            pageSizeOptions={[10, 20, 50, 100]}
+            itemName="facturas de compra"
+          />
         </div>
       )}
 
@@ -270,23 +299,23 @@ export const PurchasesPage = () => {
           <div className="card-header" style={{ flexWrap: 'wrap' }}>
             <div className="search-and-filter-group" style={{ maxWidth: '100%' }}>
               <div className="search-box">
-                <input 
-                  type="text" 
-                  placeholder="Buscar por No. Lote, Producto o Factura..." 
+                <input
+                  type="text"
+                  placeholder="Buscar por No. Lote, Producto o Factura..."
                   value={loteSearchTerm}
                   onChange={(e) => setLoteSearchTerm(e.target.value)}
                 />
               </div>
 
-              <select 
-                value={loteVencFilter} 
+              <select
+                value={loteVencFilter}
                 onChange={(e) => setLoteVencFilter(e.target.value)}
                 className="select-status-filter"
               >
                 <option value="ALL">Todos los Estados de Vencimiento</option>
-                <option value="BUENO">Estado Óptimo (&gt; 30 días)</option>
-                <option value="ALERTA">En Alerta (16 - 30 días)</option>
-                <option value="POR_VENCER">Por Vencer (&le; 15 días)</option>
+                <option value="BUENO">Estado Óptimo &gt; 30 días</option>
+                <option value="ALERTA">En Alerta 16 - 30 días</option>
+                <option value="POR_VENCER">Por Vencer &le; 15 días</option>
                 <option value="VENCIDO">Vencidos</option>
               </select>
             </div>
@@ -311,7 +340,7 @@ export const PurchasesPage = () => {
                 ) : filteredLotes.length === 0 ? (
                   <tr><td colSpan="7" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No se encontraron lotes con los filtros aplicados.</td></tr>
                 ) : (
-                  filteredLotes.map((lote) => {
+                  paginatedLotes.map((lote) => {
                     const dias = lote.dias_para_vencer;
                     let badgeClass = 'lot-bueno';
                     let badgeText = '● Óptimo';
@@ -378,11 +407,20 @@ export const PurchasesPage = () => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={currentLotePage}
+            totalItems={totalLotesFiltered}
+            pageSize={lotePageSize}
+            onPageChange={setCurrentLotePage}
+            onPageSizeChange={(newSize) => { setLotePageSize(newSize); setCurrentLotePage(1); }}
+            pageSizeOptions={[10, 20, 50, 100]}
+            itemName="lotes de inventario"
+          />
         </div>
       )}
 
-      {/* Modal para Registrar Nueva Compra */}
-      <NewPurchaseModal 
+      <NewPurchaseModal
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
         onSuccess={(msg) => {
@@ -394,15 +432,13 @@ export const PurchasesPage = () => {
         onRefreshProveedores={fetchData}
       />
 
-      {/* Modal para Ver Detalle de Compra */}
-      <PurchaseDetailModal 
+      <PurchaseDetailModal
         isOpen={Boolean(detailCompra)}
         onClose={() => setDetailCompra(null)}
         compra={detailCompra}
       />
 
-      {/* Modal de Confirmación para Anulación de Compra */}
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={Boolean(confirmAnular)}
         onClose={() => setConfirmAnular(null)}
         onConfirm={handleConfirmAnular}
@@ -416,6 +452,5 @@ export const PurchasesPage = () => {
     </div>
   );
 };
-
 
 export default PurchasesPage;

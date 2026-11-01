@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 
-/* ── COMPONENTE: TOAST NOTIFICATIONS ── */
 export const Toast = ({ toast, onClose }) => {
   useEffect(() => {
     if (toast) {
@@ -20,6 +19,5 @@ export const Toast = ({ toast, onClose }) => {
     </div>
   );
 };
-
 
 export default Toast;

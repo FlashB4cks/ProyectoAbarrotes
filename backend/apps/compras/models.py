@@ -24,7 +24,6 @@ class Compra(models.Model):
     def __str__(self):
         return f"Compra #{self.numero_comprobante} - {self.proveedor.nombre_empresa}"
 
-
 class DetalleCompra(models.Model):
     id_detalle_compra = models.BigAutoField(primary_key=True)
     compra = models.ForeignKey(Compra, on_delete=models.CASCADE, related_name='detalles', verbose_name="Compra")

@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { Toast, ConfirmModal } from '../../components/common';
+import { Toast, ConfirmModal, Pagination, usePagination } from '../../components/common';
 import { IconCheck, IconEdit, IconTag, IconUser } from '../../components/icons/Icons';
 
 import CustomerModal from './CustomerModal';
-/* ── COMPONENTE: GESTIÓN DE CLIENTES (DIRECTORIO COMERCIAL / RF-05) ── */
+
 export const ClientsContent = () => {
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, ACTIVE, INACTIVE
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
@@ -57,9 +57,8 @@ export const ClientsContent = () => {
     }
   };
 
-  // Excluir Consumidor Final (C/F) del listado de la tabla para que sea solo una opción genérica no editable
-  const cfClient = useMemo(() => clientes.find(c => c.id_cliente === 1 || c.nombre_completo === 'Consumidor Final' || (c.nit === 'C/F' && c.nombre_completo.toLowerCase().includes('consumidor'))), [clientes]);
-  const regularClientes = useMemo(() => clientes.filter(c => !(c.id_cliente === 1 || c.nombre_completo === 'Consumidor Final' || (c.nit === 'C/F' && c.nombre_completo.toLowerCase().includes('consumidor')))), [clientes]);
+  const cfClient = useMemo(() => clientes.find(c => c.id_cliente === 1 || c.nombre_completo === 'Consumidor Final' || (c.nit === 'C/F' && c.nombre_completo && c.nombre_completo.toLowerCase().includes('consumidor'))), [clientes]);
+  const regularClientes = useMemo(() => clientes.filter(c => !(c.id_cliente === 1 || c.nombre_completo === 'Consumidor Final' || (c.nit === 'C/F' && c.nombre_completo && c.nombre_completo.toLowerCase().includes('consumidor')))), [clientes]);
 
   const filteredClientes = useMemo(() => {
     let result = [...regularClientes];
@@ -75,15 +74,15 @@ export const ClientsContent = () => {
       result = result.filter(c =>
         (c.nombre_completo && c.nombre_completo.toLowerCase().includes(term)) ||
         (c.nit && c.nit.toLowerCase().includes(term)) ||
-        (c.dpi && c.dpi.includes(term)) ||
-        (c.telefono && c.telefono.includes(term)) ||
+        (c.dpi && String(c.dpi).includes(term)) ||
+        (c.telefono && String(c.telefono).includes(term)) ||
         (c.direccion && c.direccion.toLowerCase().includes(term))
       );
     }
 
     return result.sort((a, b) => {
       if (a.is_active === b.is_active) {
-        return a.nombre_completo.localeCompare(b.nombre_completo);
+        return (a.nombre_completo || '').localeCompare(b.nombre_completo || '');
       }
       return a.is_active ? -1 : 1;
     });
@@ -93,9 +92,22 @@ export const ClientsContent = () => {
   const activosCount = regularClientes.filter(c => c.is_active).length;
   const inactivosCount = regularClientes.filter(c => !c.is_active).length;
 
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    paginatedItems: paginatedClients,
+    totalItems
+  } = usePagination(filteredClientes, 10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, setCurrentPage]);
+
   return (
     <div>
-      {/* Tarjetas KPI de Clientes */}
+
       <div className="inv-kpi-grid">
         <div className="inv-kpi-card kpi-total">
           <div className="kpi-header">
@@ -122,13 +134,13 @@ export const ClientsContent = () => {
           </div>
           <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 800 }}>NIT: C/F</div>
           <div className="kpi-subtext">
-            {cfClient ? `${cfClient.total_compras || 0} compras de mostrador (No editable)` : 'Opción fija en POS'}
+            {cfClient ? `${cfClient.total_compras || 0} compras de mostrador` : 'Opción fija en Punto de Venta'}
           </div>
         </div>
 
         <div className="inv-kpi-card kpi-danger">
           <div className="kpi-header">
-            <span>Dados de Baja (Soft Delete)</span>
+            <span>Dados de Baja</span>
             <span style={{ color: inactivosCount > 0 ? '#dc2626' : 'var(--text-muted)', display: 'flex' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
@@ -146,27 +158,27 @@ export const ClientsContent = () => {
         <div className="card-header">
           <div className="search-and-filter-group">
             <div className="search-box">
-              <input 
-                type="text" 
-                placeholder="Buscar por Nombre, NIT, DPI, Teléfono o Dirección..." 
+              <input
+                type="text"
+                placeholder="Buscar por Nombre, NIT, DPI, Teléfono o Dirección..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <select 
-              value={statusFilter} 
+            <select
+              value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="select-status-filter"
             >
               <option value="ALL">Todos los Estados</option>
-              <option value="ACTIVE">Solo Activos (Ocultar dados de baja)</option>
+              <option value="ACTIVE">Solo Activos</option>
               <option value="INACTIVE">Solo Dados de Baja</option>
             </select>
           </div>
 
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             onClick={() => { setEditingCustomer(null); setIsModalOpen(true); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}
           >
@@ -201,8 +213,8 @@ export const ClientsContent = () => {
                   </td>
                 </tr>
               ) : (
-                filteredClientes.map((c) => {
-                  const fechaStr = c.fecha_registro 
+                paginatedClients.map((c) => {
+                  const fechaStr = c.fecha_registro
                     ? new Date(c.fecha_registro).toLocaleDateString('es-GT', { year: 'numeric', month: 'short', day: 'numeric' })
                     : '';
 
@@ -266,7 +278,7 @@ export const ClientsContent = () => {
                       </td>
                       <td className="text-right">
                         <div className="action-buttons-cell" style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                          <button 
+                          <button
                             type="button"
                             className="btn-icon-btn btn-edit"
                             onClick={() => { setEditingCustomer(c); setIsModalOpen(true); }}
@@ -277,7 +289,7 @@ export const ClientsContent = () => {
                           </button>
 
                           {c.nit !== 'C/F' && (
-                            <button 
+                            <button
                               type="button"
                               className={c.is_active ? "btn-icon-btn btn-danger-solid" : "btn-icon-btn btn-success-solid"}
                               onClick={() => setConfirmCustomer(c)}
@@ -295,22 +307,32 @@ export const ClientsContent = () => {
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => { setPageSize(newSize); setCurrentPage(1); }}
+          pageSizeOptions={[10, 20, 50, 100]}
+          itemName="clientes"
+        />
       </div>
 
-      <CustomerModal 
+      <CustomerModal
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); setEditingCustomer(null); }}
         onSave={handleSaveCustomer}
         editingCustomer={editingCustomer}
       />
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={!!confirmCustomer}
         onClose={() => setConfirmCustomer(null)}
         onConfirm={handleConfirmToggle}
         title={confirmCustomer?.is_active ? "Dar de Baja Cliente" : "Reactivar Cliente"}
         message={
-          confirmCustomer?.is_active 
+          confirmCustomer?.is_active
             ? `¿Está seguro de dar de baja al cliente "${confirmCustomer?.nombre_completo}"? El historial de facturas se mantendrá protegido bajo borrado lógico.`
             : `¿Desea reactivar al cliente "${confirmCustomer?.nombre_completo}" para permitir facturar a su nombre en el Punto de Venta?`
         }
@@ -323,7 +345,6 @@ export const ClientsContent = () => {
   );
 };
 
-
 export const ClientsPage = () => {
   return (
     <div className="view-panel">
@@ -331,6 +352,5 @@ export const ClientsPage = () => {
     </div>
   );
 };
-
 
 export default ClientsPage;

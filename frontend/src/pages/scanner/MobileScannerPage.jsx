@@ -3,7 +3,6 @@ import { NohemyApi } from '../../api/nohemyApi';
 import { playScannerBeep } from '../../utils/audio';
 import { IconLock } from '../../components/icons/Icons';
 
-/* ── COMPONENTE: INTERFAZ MÓVIL PARA TELÉFONO CELULAR (ESCÁNER WEB) ── */
 export const MobileScannerPage = () => {
   const [sessionId, setSessionId] = useState('');
   const [pin, setPin] = useState('');
@@ -21,7 +20,7 @@ export const MobileScannerPage = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    // Extraer session_id y pin de la URL si se escaneó el QR
+
     const hash = window.location.hash || '';
     const params = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : window.location.search);
     const s = params.get('s') || '';
@@ -31,7 +30,7 @@ export const MobileScannerPage = () => {
       setPin(p);
       setInputPin(p);
       setIsPaired(true);
-      // Handshake inicial automático si vino por QR
+
       NohemyApi.enviarCodigoEscaner({
         session_id: s,
         pin: p,
@@ -41,7 +40,6 @@ export const MobileScannerPage = () => {
     }
   }, []);
 
-  // Iniciar cámara trasera cuando esté emparejado (si el navegador móvil lo permite)
   useEffect(() => {
     if (!isPaired) return;
 
@@ -70,7 +68,6 @@ export const MobileScannerPage = () => {
           videoRef.current.play();
         }
 
-        // Si el navegador soporta BarcodeDetector nativo
         if ('BarcodeDetector' in window) {
           detector = new window.BarcodeDetector({
             formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code'],
@@ -93,7 +90,7 @@ export const MobileScannerPage = () => {
                   }
                 }
               } catch {
-                // error frame detection
+
               }
             }
           }, 350);
@@ -183,7 +180,6 @@ export const MobileScannerPage = () => {
     }
   };
 
-  // Captura de foto con cámara nativa del celular (funciona en cualquier navegador móvil sin HTTPS)
   const handlePhotoCapture = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -257,9 +253,9 @@ export const MobileScannerPage = () => {
             Ingresa el <strong>PIN de 4 dígitos</strong> que aparece en la pantalla de NohemySys en la computadora:
           </p>
           <div style={{ marginBottom: '16px' }}>
-            <input 
-              type="text" 
-              inputMode="numeric" 
+            <input
+              type="text"
+              inputMode="numeric"
               maxLength={6}
               value={inputPin}
               onChange={(e) => setInputPin(e.target.value)}
@@ -280,7 +276,7 @@ export const MobileScannerPage = () => {
               autoFocus
             />
           </div>
-          <button 
+          <button
             type="button"
             className="btn btn-primary"
             style={{ width: '100%', padding: '12px', fontWeight: 700, fontSize: '15px' }}
@@ -299,11 +295,11 @@ export const MobileScannerPage = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="scanner-indicator-dot"></span>
               <span style={{ fontSize: '13px', color: '#10b981', fontWeight: 700 }}>
-                ● Vinculado a PC (PIN: {pin})
+                ● Vinculado a PC — PIN: {pin}
               </span>
             </div>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => { setIsPaired(false); setPin(''); }}
               style={{ background: 'transparent', border: 'none', color: '#a09885', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
             >
@@ -311,14 +307,13 @@ export const MobileScannerPage = () => {
             </button>
           </div>
 
-          {/* Visor de cámara en vivo si está disponible */}
           {hasCamera && (
             <div className="mobile-camera-viewport">
               <video ref={videoRef} className="mobile-camera-video" playsInline muted></video>
               <div className="mobile-camera-reticle"></div>
               <div className="scanner-laser-line"></div>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={handleToggleTorch}
                 style={{
                   position: 'absolute',
@@ -339,17 +334,16 @@ export const MobileScannerPage = () => {
             </div>
           )}
 
-          {/* Botón de Captura Nativa con Cámara Móvil */}
-          <input 
-            type="file" 
-            accept="image/*" 
-            capture="environment" 
-            ref={fileInputRef} 
-            onChange={handlePhotoCapture} 
-            style={{ display: 'none' }} 
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            ref={fileInputRef}
+            onChange={handlePhotoCapture}
+            style={{ display: 'none' }}
           />
           <div style={{ margin: '10px auto 0 auto', maxWidth: '420px', width: '100%', textAlign: 'center' }}>
-            <button 
+            <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isProcessingPhoto}
@@ -364,14 +358,13 @@ export const MobileScannerPage = () => {
             </button>
           </div>
 
-          {/* Entrada de Código con Teclado Rápido */}
           <div style={{ marginTop: '14px', maxWidth: '420px', margin: '14px auto 0 auto', width: '100%' }}>
             <label style={{ fontSize: '13px', color: '#ffd700', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
               Ingreso Manual de Código:
             </label>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSendBarcode(); }}
@@ -387,8 +380,8 @@ export const MobileScannerPage = () => {
                   fontWeight: 700
                 }}
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => handleSendBarcode()}
                 className="btn btn-primary"
                 style={{ padding: '0 16px', fontWeight: 800, fontSize: '13.5px' }}
@@ -397,7 +390,6 @@ export const MobileScannerPage = () => {
               </button>
             </div>
 
-            {/* Teclado táctil rápido de números para teléfonos */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginTop: '10px' }}>
               {['1','2','3','4','5','6','7','8','9','Limpiar','0','Enviar'].map((key) => (
                 <button
@@ -450,8 +442,8 @@ export const MobileScannerPage = () => {
       )}
 
       <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' }}>
-        <a 
-          href="/" 
+        <a
+          href="/"
           style={{ color: 'var(--accent)', fontSize: '13px', textDecoration: 'none' }}
         >
           ← Ir a la versión de escritorio de NohemySys
@@ -460,6 +452,5 @@ export const MobileScannerPage = () => {
     </div>
   );
 };
-
 
 export default MobileScannerPage;

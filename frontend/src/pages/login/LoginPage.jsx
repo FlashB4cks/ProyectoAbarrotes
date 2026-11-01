@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
-/* ── COMPONENTE: PÁGINA DE LOGIN ── */
 export const LoginPage = () => {
   const { login } = useAuth();
   const [username, setUsername] = useState('');
@@ -61,6 +60,5 @@ export const LoginPage = () => {
     </div>
   );
 };
-
 
 export default LoginPage;

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import NohemyApi from '../../api/nohemyApi';
 
-/* ── MODAL: CAMBIO DE CONTRASEÑA ── */
 export const ChangePasswordModal = ({ isOpen, user, onSuccess }) => {
   const { logout } = useAuth();
   const [passwordActual, setPasswordActual] = useState('');
@@ -17,13 +16,13 @@ export const ChangePasswordModal = ({ isOpen, user, onSuccess }) => {
   const hasUpperLower = /[A-Z]/.test(nuevaPassword) && /[a-z]/.test(nuevaPassword);
   const hasDigit = /\d/.test(nuevaPassword);
   const isNotOnlyDigits = !/^\d+$/.test(nuevaPassword);
-  
+
   const firstNameClean = (user?.first_name || '').toLowerCase().trim();
   const lastNameClean = (user?.last_name || '').toLowerCase().trim();
   const usernameClean = (user?.username || '').toLowerCase().trim();
   const newLower = nuevaPassword.toLowerCase();
 
-  const isNotSimilarToName = 
+  const isNotSimilarToName =
     (!usernameClean || !newLower.includes(usernameClean)) &&
     (!firstNameClean || firstNameClean.length < 3 || !newLower.includes(firstNameClean)) &&
     (!lastNameClean || lastNameClean.length < 3 || !newLower.includes(lastNameClean));
@@ -66,7 +65,7 @@ export const ChangePasswordModal = ({ isOpen, user, onSuccess }) => {
 
           <div className="form-group" style={{ marginBottom: '12px' }}>
             <label style={{ fontSize: '12px' }}>Contraseña Temporal Actual <span className="req">*</span></label>
-            <input 
+            <input
               type="password"
               value={passwordActual}
               onChange={(e) => setPasswordActual(e.target.value)}
@@ -79,7 +78,7 @@ export const ChangePasswordModal = ({ isOpen, user, onSuccess }) => {
           <div className="form-grid" style={{ gap: '12px', marginBottom: '14px' }}>
             <div className="form-group">
               <label style={{ fontSize: '12px' }}>Nueva Contraseña <span className="req">*</span></label>
-              <input 
+              <input
                 type="password"
                 value={nuevaPassword}
                 onChange={(e) => setNuevaPassword(e.target.value)}
@@ -91,7 +90,7 @@ export const ChangePasswordModal = ({ isOpen, user, onSuccess }) => {
 
             <div className="form-group">
               <label style={{ fontSize: '12px' }}>Confirmar Contraseña <span className="req">*</span></label>
-              <input 
+              <input
                 type="password"
                 value={confirmarPassword}
                 onChange={(e) => setConfirmarPassword(e.target.value)}
@@ -123,6 +122,5 @@ export const ChangePasswordModal = ({ isOpen, user, onSuccess }) => {
     </div>
   );
 };
-
 
 export default ChangePasswordModal;

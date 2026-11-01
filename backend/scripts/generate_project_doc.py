@@ -37,64 +37,57 @@ def add_placeholder_box(doc, title, instruction):
     table = doc.add_table(rows=1, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
-    
+
     cell = table.rows[0].cells[0]
     cell.width = Inches(6.5)
-    
-    # Fondo gris suave y borde azul punteado/solido
+
     set_cell_background(cell, "F8F9FA")
     set_cell_border(cell, 
                     top={'val': 'dashed', 'sz': 8, 'color': '1A73E8', 'space': '0'},
                     bottom={'val': 'dashed', 'sz': 8, 'color': '1A73E8', 'space': '0'},
                     left={'val': 'dashed', 'sz': 8, 'color': '1A73E8', 'space': '0'},
                     right={'val': 'dashed', 'sz': 8, 'color': '1A73E8', 'space': '0'})
-    
+
     p = cell.paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_before = Pt(18)
     p.paragraph_format.space_after = Pt(4)
-    
+
     run_icon = p.add_run("📸 [ PEGAR AQUÍ CAPTURA DE PANTALLA ]\n")
     run_icon.bold = True
     run_icon.font.size = Pt(11)
-    run_icon.font.color.rgb = RGBColor(26, 115, 232) # Google Blue
-    
+    run_icon.font.color.rgb = RGBColor(26, 115, 232)
+
     run_title = p.add_run(f"{title}\n")
     run_title.bold = True
     run_title.font.size = Pt(10)
     run_title.font.color.rgb = RGBColor(32, 33, 36)
-    
+
     run_desc = p.add_run(instruction)
     run_desc.italic = True
     run_desc.font.size = Pt(9)
     run_desc.font.color.rgb = RGBColor(95, 99, 104)
-    
+
     p_pad = cell.add_paragraph()
     p_pad.paragraph_format.space_after = Pt(18)
-    
-    # Espacio tras la tabla
+
     p_after = doc.add_paragraph()
     p_after.paragraph_format.space_before = Pt(0)
     p_after.paragraph_format.space_after = Pt(10)
 
 def generate_document(output_path):
     doc = Document()
-    
-    # Configurar margenes normales (1 pulgada = 2.54 cm)
+
     for section in doc.sections:
         section.top_margin = Inches(1.0)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(1.0)
         section.right_margin = Inches(1.0)
 
-    # Colores institucionales
-    COLOR_PRIMARY = RGBColor(26, 115, 232)   # Google Blue
-    COLOR_SECONDARY = RGBColor(30, 41, 59)  # Slate Dark
+    COLOR_PRIMARY = RGBColor(26, 115, 232)
+    COLOR_SECONDARY = RGBColor(30, 41, 59)
     COLOR_MUTED = RGBColor(100, 116, 139)
 
-    # ==========================================
-    # PORTADA
-    # ==========================================
     p_pre = doc.add_paragraph()
     p_pre.paragraph_format.space_before = Pt(40)
     p_pre.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -119,37 +112,32 @@ def generate_document(output_path):
     r_sub.font.size = Pt(13)
     r_sub.font.color.rgb = COLOR_SECONDARY
 
-    # Linea divisoria estetica
     p_line = doc.add_paragraph()
     p_line.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_line.paragraph_format.space_after = Pt(100)
     r_line = p_line.add_run("━" * 45)
     r_line.font.color.rgb = RGBColor(218, 224, 233)
 
-    # Datos del estudiante / equipo
     p_meta = doc.add_paragraph()
     p_meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_meta.paragraph_format.line_spacing = 1.3
-    
+
     r_aut = p_meta.add_run("Presentado por:\n")
     r_aut.bold = True
     r_aut.font.size = Pt(11)
-    
+
     r_nom = p_meta.add_run("Rubén Estuardo / FlashB4cks\n\n")
     r_nom.font.size = Pt(12)
-    
+
     r_fecha = p_meta.add_run("Proyecto ID GCP: proyectotelecom-511619\nRegión: us-central1\nOctubre 2026")
     r_fecha.font.size = Pt(10)
     r_fecha.font.color.rgb = COLOR_MUTED
 
     doc.add_page_break()
 
-    # ==========================================
-    # 1. OBJETIVO Y DESCRIPCIÓN DEL CASO
-    # ==========================================
     h1 = doc.add_heading("1. Objetivo del Proyecto", level=1)
     h1.runs[0].font.color.rgb = COLOR_PRIMARY
-    
+
     p = doc.add_paragraph(
         "Diseñar e implementar una infraestructura empresarial completa, desacoplada y escalable "
         "utilizando los servicios administrados de Google Cloud Platform (GCP). El proyecto garantiza "
@@ -160,12 +148,12 @@ def generate_document(output_path):
 
     h2 = doc.add_heading("2. Caso Empresarial y Alcance", level=1)
     h2.runs[0].font.color.rgb = COLOR_PRIMARY
-    
+
     doc.add_paragraph(
         "Una empresa ficticia de carácter comercial y minorista requiere un sistema web integral y robusto "
         "(denominado NohemySys) para administrar de forma centralizada y segura sus operaciones neurálgicas:"
     )
-    
+
     bullet_items = [
         ("Clientes:", "Control y registro de cartera de clientes, soporte fiscal para Consumidor Final (C/F) y NIT."),
         ("Productos:", "Catálogo maestro con código de barras, categorías, marcas, precios de costo/venta y control de stock."),
@@ -179,9 +167,6 @@ def generate_document(output_path):
         r_b.bold = True
         bp.add_run(b_desc)
 
-    # ==========================================
-    # 3. TABLA DE DIRECCIONAMIENTO DE RED
-    # ==========================================
     doc.add_page_break()
     h3 = doc.add_heading("3. Direccionamiento de Red y Subredes (VPC)", level=1)
     h3.runs[0].font.color.rgb = COLOR_PRIMARY
@@ -192,7 +177,6 @@ def generate_document(output_path):
         "y direccionamiento bajo el estándar RFC 1918."
     )
 
-    # Tabla de direccionamiento
     table = doc.add_table(rows=5, cols=4)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
@@ -232,7 +216,6 @@ def generate_document(output_path):
 
     doc.add_paragraph().paragraph_format.space_after = Pt(10)
 
-    # Reglas de Firewall
     h3_sub = doc.add_heading("Políticas de Seguridad y Firewall", level=2)
     h3_sub.runs[0].font.color.rgb = COLOR_SECONDARY
 
@@ -250,9 +233,6 @@ def generate_document(output_path):
         r_f.bold = True
         fp.add_run(f_desc)
 
-    # ==========================================
-    # 4. ARQUITECTURA DE LA SOLUCIÓN
-    # ==========================================
     doc.add_page_break()
     h4 = doc.add_heading("4. Arquitectura de Infraestructura en Google Cloud", level=1)
     h4.runs[0].font.color.rgb = COLOR_PRIMARY
@@ -278,9 +258,6 @@ def generate_document(output_path):
     add_placeholder_box(doc, "DIAGRAMA DE ARQUITECTURA GENERAL", 
                         "Inserta aquí el diagrama exportado de Draw.io, Lucidchart o captura del flujo de arquitectura Cloud Run + Cloud SQL + Storage.")
 
-    # ==========================================
-    # 5. MODELO DE DATOS Y REPOSITORIO
-    # ==========================================
     doc.add_page_break()
     h5 = doc.add_heading("5. Modelo de Base de Datos y Código Fuente", level=1)
     h5.runs[0].font.color.rgb = COLOR_PRIMARY
@@ -338,9 +315,6 @@ def generate_document(output_path):
     r_r4 = p_repo.add_run("database_schema.sql (disponible en la raíz del proyecto).")
     r_r4.italic = True
 
-    # ==========================================
-    # 6. EVIDENCIAS DE IMPLEMENTACIÓN
-    # ==========================================
     doc.add_page_break()
     h6 = doc.add_heading("6. Evidencias de Implementación en Google Cloud", level=1)
     h6.runs[0].font.color.rgb = COLOR_PRIMARY
@@ -353,37 +327,37 @@ def generate_document(output_path):
     evidencias = [
         ("EVIDENCIA 6.1: PROYECTO EN GOOGLE CLOUD PLATFORM",
          "Captura de la barra superior de la consola de Google Cloud donde se verifique el ID del proyecto: proyectotelecom-511619."),
-        
+
         ("EVIDENCIA 6.2: RED VIRTUAL PRIVADA (VPC)",
          "Captura en Red de VPC > Redes de VPC mostrando la red 'vpc-empresa' con modo de subred personalizado."),
-        
+
         ("EVIDENCIA 6.3: SUBREDES CONFIGURADAS (WEB, APP, DB)",
          "Captura dentro de 'vpc-empresa' donde se visualicen 'subnet-web' (10.10.10.0/24), 'subnet-app' (10.10.20.0/24) y 'subnet-db' (10.10.30.0/24) en us-central1."),
-        
+
         ("EVIDENCIA 6.4: REGLAS DE FIREWALL",
          "Captura en Red de VPC > Firewall con las reglas 'allow-web-traffic', 'allow-internal-traffic' y 'allow-icmp' activas."),
-        
+
         ("EVIDENCIA 6.5: CÓMPUTO SERVERLESS - CLOUD RUN",
          "Captura en Cloud Run mostrando los dos servicios activos: 'nohemysys-backend' y 'nohemysys-frontend' con estado verde 100% de tráfico."),
-        
+
         ("EVIDENCIA 6.6: BASE DE DATOS ADMINISTRADA - CLOUD SQL",
          "Captura en Cloud SQL mostrando la instancia 'nohemysys-db' con motor PostgreSQL 16 y estado RUNNABLE."),
-        
+
         ("EVIDENCIA 6.7: ALMACENAMIENTO DE OBJETOS - CLOUD STORAGE",
          "Captura en Cloud Storage > Buckets mostrando el bucket de almacenamiento de documentos creado en us-central1."),
-        
+
         ("EVIDENCIA 6.8: APLICACIÓN WEB - PANTALLA DE INICIO DE SESIÓN",
          "Captura de la aplicación en el navegador con la URL pública HTTPS de Cloud Run cargando el módulo de Login."),
-        
+
         ("EVIDENCIA 6.9: APLICACIÓN WEB - MÓDULO DE CLIENTES (CRUD)",
          "Captura del módulo de Clientes listando registros (ej. Consumidor Final) y formulario de nuevo cliente."),
-        
+
         ("EVIDENCIA 6.10: APLICACIÓN WEB - MÓDULO DE PRODUCTOS (CATÁLOGO)",
          "Captura del catálogo maestro de productos con precios, stock y códigos de barras."),
-        
+
         ("EVIDENCIA 6.11: APLICACIÓN WEB - PUNTO DE VENTA (POS) Y FACTURACIÓN",
          "Captura del Punto de Venta con productos agregados al carrito, cálculo de subtotales, impuestos y total."),
-        
+
         ("EVIDENCIA 6.12: REPOSITORIO DE CÓDIGO FUENTE (GITHUB)",
          "Captura de la página principal del repositorio en GitHub (FlashB4cks/ProyectoAbarrotes) mostrando los commits y estructura Docker.")
     ]
@@ -391,9 +365,6 @@ def generate_document(output_path):
     for title, desc in evidencias:
         add_placeholder_box(doc, title, desc)
 
-    # ==========================================
-    # 7. CONCLUSIONES
-    # ==========================================
     h7 = doc.add_heading("7. Conclusiones y Beneficios de la Arquitectura", level=1)
     h7.runs[0].font.color.rgb = COLOR_PRIMARY
 

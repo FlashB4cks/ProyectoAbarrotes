@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { Toast } from '../../components/common';
+import { Toast, Pagination, usePagination } from '../../components/common';
 import { IconAlertTriangle, IconBarChart, IconBarcode, IconCalendar, IconCreditCard, IconLayers, IconPrinter, IconQuetzal, IconShieldCheck, IconTrendingUp } from '../../components/icons/Icons';
 
-/* ── COMPONENTE: MÓDULO DE REPORTES Y ANALÍTICAS (RF-07.2) ── */
 export const ReportsAnalyticsPage = () => {
-  const [activeSubTab, setActiveSubTab] = useState('financiero'); // 'financiero' | 'mermas_fifo'
-  const [periodo, setPeriodo] = useState('mes'); // 'hoy' | 'semana' | 'mes' | 'anio' | 'todo'
+  const [activeSubTab, setActiveSubTab] = useState('financiero');
+  const [periodo, setPeriodo] = useState('mes');
   const [loading, setLoading] = useState(true);
   const [financieroData, setFinancieroData] = useState(null);
   const [fifoData, setFifoData] = useState(null);
@@ -43,33 +42,41 @@ export const ReportsAnalyticsPage = () => {
   const pagos = financieroData?.desglose_pagos || [];
   const historialFifo = fifoData?.historial_salidas_fifo || [];
 
-  // Calcular métricas y escalas para el gráfico
+  const {
+    currentPage: currentFifoPage,
+    setCurrentPage: setCurrentFifoPage,
+    pageSize: fifoPageSize,
+    setPageSize: setFifoPageSize,
+    paginatedItems: paginatedFifo,
+    totalItems: totalFifo
+  } = usePagination(historialFifo, 10);
+
   const maxVenta = Math.max(...flujo.map(f => f.ventas || 0), 10);
   const puntoPico = flujo.reduce((max, f) => (f.ventas > max.ventas ? f : max), { ventas: 0, dia_label: '-' });
 
   const periodoSubtitulos = {
-    hoy: 'Ventas por Hora Comercial (Hoy)',
-    semana: 'Ventas Diarias (Últimos 7 Días)',
-    mes: 'Ventas Diarias (Este Mes)',
-    anio: 'Ventas Mensuales (Año en Curso)',
+    hoy: 'Ventas por Hora Comercial de Hoy',
+    semana: 'Ventas Diarias de la Semana',
+    mes: 'Ventas Diarias de Este Mes',
+    anio: 'Ventas Mensuales del Año en Curso',
     todo: 'Evolución Histórica por Período Mensual',
   };
 
   return (
     <div className="page-container" style={{ padding: '24px' }}>
-      {/* Barra de Controles y Sub-pestañas */}
+
       <div className="inv-control-bar no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className={`inv-tab-btn ${activeSubTab === 'financiero' ? 'active' : ''}`}
             onClick={() => setActiveSubTab('financiero')}
           >
             <IconBarChart size={15} />
             <span>Financiero y Ventas</span>
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className={`inv-tab-btn ${activeSubTab === 'mermas_fifo' ? 'active' : ''}`}
             onClick={() => setActiveSubTab('mermas_fifo')}
           >
@@ -83,7 +90,7 @@ export const ReportsAnalyticsPage = () => {
             <div style={{ display: 'inline-flex', background: 'rgba(0,0,0,0.03)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               {[
                 { key: 'hoy', label: 'Hoy' },
-                { key: 'semana', label: '7 Días' },
+                { key: 'semana', label: 'Semana' },
                 { key: 'mes', label: 'Este Mes' },
                 { key: 'anio', label: 'Este Año' },
                 { key: 'todo', label: 'Histórico' },
@@ -130,7 +137,7 @@ export const ReportsAnalyticsPage = () => {
         </div>
       ) : activeSubTab === 'financiero' ? (
         <div>
-          {/* Tarjetas KPI Financieras */}
+
           <div className="inv-kpi-grid" style={{ marginBottom: '24px' }}>
             <div className="inv-kpi-card kpi-total">
               <div className="kpi-header">
@@ -147,14 +154,14 @@ export const ReportsAnalyticsPage = () => {
 
             <div className="inv-kpi-card">
               <div className="kpi-header">
-                <span>Costo de Mercancía (COGS)</span>
+                <span>Costo de Mercancía Vendida</span>
                 <IconLayers size={16} />
               </div>
               <div className="kpi-value">
                 Q {parseFloat(kpis.costo_total || 0).toFixed(2)}
               </div>
               <div className="kpi-subtext">
-                Costo FIFO exacto de los lotes vendidos
+                Costo PEPS exacto de los lotes vendidos
               </div>
             </div>
 
@@ -185,7 +192,6 @@ export const ReportsAnalyticsPage = () => {
             </div>
           </div>
 
-          {/* Gráfico de Tendencia Temporal Inteligente y Adaptativo */}
           <div className="report-panel" style={{ marginBottom: '24px' }}>
             <div className="report-panel-header" style={{ flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -197,7 +203,7 @@ export const ReportsAnalyticsPage = () => {
                   ({financieroData?.periodo?.fecha_inicio} al {financieroData?.periodo?.fecha_fin})
                 </span>
               </div>
-              
+
               <div style={{ display: 'flex', gap: '16px', alignItems: 'center', fontSize: '12px' }}>
                 {puntoPico.ventas > 0 && (
                   <span style={{ color: 'var(--text-muted)' }}>
@@ -217,9 +223,9 @@ export const ReportsAnalyticsPage = () => {
                 </div>
               ) : (
                 <div style={{ position: 'relative', width: '100%', userSelect: 'none' }}>
-                  {/* Tooltip flotante al interactuar con cualquier barra */}
+
                   {hoveredData && (
-                    <div 
+                    <div
                       className="no-print"
                       style={{
                         position: 'absolute',
@@ -255,9 +261,8 @@ export const ReportsAnalyticsPage = () => {
                     </div>
                   )}
 
-                  {/* Contenedor principal: Eje Y + Barras */}
                   <div style={{ display: 'flex', height: '180px', position: 'relative' }}>
-                    {/* Eje Y de Referencia */}
+
                     <div style={{
                       width: '45px',
                       display: 'flex',
@@ -276,14 +281,12 @@ export const ReportsAnalyticsPage = () => {
                       <span>Q0</span>
                     </div>
 
-                    {/* Área de Gráfico */}
                     <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'flex-end', paddingBottom: '26px' }}>
-                      {/* Líneas Horizontales Guía */}
+
                       <div style={{ position: 'absolute', left: 0, right: 0, top: '6px', borderTop: '1px dashed rgba(0,0,0,0.06)' }} />
                       <div style={{ position: 'absolute', left: 0, right: 0, top: 'calc(50% - 13px)', borderTop: '1px dashed rgba(0,0,0,0.06)' }} />
                       <div style={{ position: 'absolute', left: 0, right: 0, bottom: '26px', borderTop: '1px solid var(--border-color)' }} />
 
-                      {/* Contenedor de Columnas de Datos */}
                       <div style={{
                         display: 'flex',
                         width: '100%',
@@ -297,7 +300,6 @@ export const ReportsAnalyticsPage = () => {
                           const isPico = d.ventas > 0 && d.ventas === puntoPico.ventas;
                           const isHovered = hoveredData && hoveredData.fecha === d.fecha;
 
-                          // Lógica de visibilidad de etiquetas para evitar superposiciones
                           let showLabel = true;
                           if (flujo.length > 20) {
                             showLabel = idx % 2 === 0 || d.ventas > 0;
@@ -321,7 +323,7 @@ export const ReportsAnalyticsPage = () => {
                                 cursor: 'pointer',
                               }}
                             >
-                              {/* Monto sobre la barra */}
+
                               {d.ventas > 0 && (
                                 <span
                                   style={{
@@ -343,7 +345,6 @@ export const ReportsAnalyticsPage = () => {
                                 </span>
                               )}
 
-                              {/* Barra física con gradiente */}
                               <div
                                 style={{
                                   width: '100%',
@@ -364,7 +365,6 @@ export const ReportsAnalyticsPage = () => {
                                 }}
                               />
 
-                              {/* Etiqueta X debajo de la barra */}
                               <div
                                 style={{
                                   position: 'absolute',
@@ -391,9 +391,8 @@ export const ReportsAnalyticsPage = () => {
             </div>
           </div>
 
-          {/* Paneles 2 Columnas: Ventas por Categoría & Métodos de Pago */}
           <div className="report-grid-2">
-            {/* Categorías */}
+
             <div className="report-panel">
               <div className="report-panel-header">
                 <span className="report-panel-title">
@@ -417,8 +416,8 @@ export const ReportsAnalyticsPage = () => {
                         <span className="category-val">Q {cat.total.toFixed(2)} ({cat.porcentaje}%)</span>
                       </div>
                       <div className="category-progress-bg">
-                        <div 
-                          className="category-progress-fill" 
+                        <div
+                          className="category-progress-fill"
                           style={{ width: `${Math.min(cat.porcentaje, 100)}%` }}
                         />
                       </div>
@@ -428,7 +427,6 @@ export const ReportsAnalyticsPage = () => {
               </div>
             </div>
 
-            {/* Métodos de Pago */}
             <div className="report-panel">
               <div className="report-panel-header">
                 <span className="report-panel-title">
@@ -446,12 +444,12 @@ export const ReportsAnalyticsPage = () => {
                   </div>
                 ) : (
                   pagos.map(p => (
-                    <div 
-                      key={p.metodo} 
-                      style={{ 
-                        background: 'rgba(0,0,0,0.02)', 
-                        border: '1px solid var(--border-color)', 
-                        padding: '12px 16px', 
+                    <div
+                      key={p.metodo}
+                      style={{
+                        background: 'rgba(0,0,0,0.02)',
+                        border: '1px solid var(--border-color)',
+                        padding: '12px 16px',
                         borderRadius: '8px',
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -467,13 +465,13 @@ export const ReportsAnalyticsPage = () => {
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <span style={{ 
-                          background: 'rgba(184, 134, 11, 0.12)', 
-                          color: 'var(--accent)', 
-                          padding: '3px 8px', 
-                          borderRadius: '6px', 
-                          fontWeight: 800, 
-                          fontSize: '13px' 
+                        <span style={{
+                          background: 'rgba(184, 134, 11, 0.12)',
+                          color: 'var(--accent)',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontWeight: 800,
+                          fontSize: '13px'
                         }}>
                           {Number(p.porcentaje || 0)}%
                         </span>
@@ -488,7 +486,6 @@ export const ReportsAnalyticsPage = () => {
             </div>
           </div>
 
-          {/* Top 10 Productos Más Vendidos */}
           <div className="report-panel">
             <div className="report-panel-header">
               <span className="report-panel-title">
@@ -508,7 +505,7 @@ export const ReportsAnalyticsPage = () => {
                     <th className="rep-col-cat" style={{ width: '14%' }}>CATEGORÍA</th>
                     <th className="rep-col-qty" style={{ textAlign: 'center', width: '12%' }}>UNIDADES VENDIDAS</th>
                     <th className="rep-col-ing" style={{ textAlign: 'right', width: '12%' }}>INGRESOS</th>
-                    <th className="rep-col-fifo" style={{ textAlign: 'right', width: '12%' }}>COSTO FIFO</th>
+                    <th className="rep-col-fifo" style={{ textAlign: 'right', width: '12%' }}>COSTO PEPS</th>
                     <th className="rep-col-uti" style={{ textAlign: 'right', width: '12%' }}>UTILIDAD</th>
                   </tr>
                 </thead>
@@ -534,13 +531,13 @@ export const ReportsAnalyticsPage = () => {
                           </div>
                         </td>
                         <td className="rep-col-cat">
-                          <span style={{ 
-                            fontSize: '11.5px', 
-                            color: 'var(--text-muted)', 
-                            background: 'rgba(0,0,0,0.03)', 
-                            padding: '3px 8px', 
+                          <span style={{
+                            fontSize: '11.5px',
+                            color: 'var(--text-muted)',
+                            background: 'rgba(0,0,0,0.03)',
+                            padding: '3px 8px',
                             borderRadius: '4px',
-                            border: '1px solid rgba(0,0,0,0.06)' 
+                            border: '1px solid rgba(0,0,0,0.06)'
                           }}>
                             {prod.categoria}
                           </span>
@@ -576,9 +573,9 @@ export const ReportsAnalyticsPage = () => {
           </div>
         </div>
       ) : (
-        /* Sub-pestaña 2: Rotación PEPS y Mermas Evitadas (RF-07.2) */
+
         <div>
-          {/* Tarjetas KPI de Prevención de Mermas */}
+
           <div className="inv-kpi-grid" style={{ marginBottom: '24px' }}>
             <div className="inv-kpi-card kpi-success">
               <div className="kpi-header">
@@ -595,7 +592,7 @@ export const ReportsAnalyticsPage = () => {
 
             <div className="inv-kpi-card kpi-total">
               <div className="kpi-header">
-                <span>Tasa de Eficiencia FIFO</span>
+                <span>Tasa de Eficiencia PEPS</span>
                 <IconTrendingUp size={16} />
               </div>
               <div className="kpi-value" style={{ color: 'var(--accent)' }}>
@@ -633,7 +630,6 @@ export const ReportsAnalyticsPage = () => {
             </div>
           </div>
 
-          {/* Semáforo Operativo de Lotes en Almacén */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -722,7 +718,6 @@ export const ReportsAnalyticsPage = () => {
             </div>
           </div>
 
-          {/* Historial de Despachos FIFO Oportunos */}
           <div className="report-panel" style={{ marginBottom: '24px' }}>
             <div className="report-panel-header">
               <span className="report-panel-title">
@@ -739,7 +734,7 @@ export const ReportsAnalyticsPage = () => {
                   <tr>
                     <th style={{ width: '130px' }}>FACTURA</th>
                     <th>PRODUCTO</th>
-                    <th style={{ width: '130px' }}>LOTE FIFO</th>
+                    <th style={{ width: '130px' }}>LOTE PEPS</th>
                     <th style={{ width: '160px' }}>FECHA VENCIMIENTO</th>
                     <th style={{ width: '110px', textAlign: 'center' }}>CANTIDAD</th>
                     <th style={{ width: '120px', textAlign: 'right' }}>COSTO UNIT.</th>
@@ -755,13 +750,13 @@ export const ReportsAnalyticsPage = () => {
                       </td>
                     </tr>
                   ) : (
-                    historialFifo.map(s => (
+                    paginatedFifo.map(s => (
                       <tr key={s.id_salida}>
                         <td>
-                          <span style={{ 
+                          <span style={{
                             display: 'inline-block',
-                            fontWeight: 700, 
-                            color: 'var(--accent)', 
+                            fontWeight: 700,
+                            color: 'var(--accent)',
                             fontFamily: 'monospace',
                             fontSize: '12px',
                             background: 'rgba(184, 134, 11, 0.08)',
@@ -783,16 +778,16 @@ export const ReportsAnalyticsPage = () => {
                           )}
                         </td>
                         <td>
-                          <span style={{ 
+                          <span style={{
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '5px',
-                            fontFamily: 'monospace', 
-                            fontSize: '12px', 
+                            fontFamily: 'monospace',
+                            fontSize: '12px',
                             fontWeight: 600,
-                            background: '#f8fafc', 
+                            background: '#f8fafc',
                             color: '#334155',
-                            padding: '3px 8px', 
+                            padding: '3px 8px',
                             borderRadius: '6px',
                             border: '1px solid #e2e8f0'
                           }}>
@@ -831,6 +826,15 @@ export const ReportsAnalyticsPage = () => {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={currentFifoPage}
+              totalItems={totalFifo}
+              pageSize={fifoPageSize}
+              onPageChange={setCurrentFifoPage}
+              onPageSizeChange={(newSize) => { setFifoPageSize(newSize); setCurrentFifoPage(1); }}
+              pageSizeOptions={[10, 20, 50]}
+              itemName="despachos"
+            />
           </div>
         </div>
       )}
@@ -839,6 +843,5 @@ export const ReportsAnalyticsPage = () => {
     </div>
   );
 };
-
 
 export default ReportsAnalyticsPage;

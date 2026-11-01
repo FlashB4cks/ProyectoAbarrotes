@@ -1,6 +1,4 @@
-// Determinar dinamicamente la URL del backend segun el entorno
-// Usar ruta relativa '/api' en el navegador para que pase siempre por el proxy de Vite en puerto 3000.
-// Esto soluciona definitivamente el error 'Failed to fetch', bloqueos de puertos y CORS en telefonos moviles conectados por USB o Wi-Fi.
+
 const getApiBaseUrl = () => {
   if (import.meta.env && import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
@@ -19,7 +17,6 @@ const STORAGE_KEYS = {
   USER_DATA: 'nohemysys_user_data',
 };
 
-/* ── CLIENTE HTTP API ── */
 class NohemyApi {
   static getBaseUrl() {
     return getApiBaseUrl();
@@ -108,7 +105,6 @@ class NohemyApi {
     return false;
   }
 
-  /* ── AUTENTICACIÓN Y USUARIOS ── */
   static async login(usernameOrEmail, password) {
     const data = await this.request('/autenticacion/login/', {
       method: 'POST',
@@ -131,13 +127,11 @@ class NohemyApi {
   static async updateUser(id, userData) { return await this.request(`/autenticacion/users/${id}/`, { method: 'PUT', body: JSON.stringify(userData) }); }
   static async toggleUserStatus(id) { return await this.request(`/autenticacion/users/${id}/toggle-status/`, { method: 'POST' }); }
 
-  /* ── MANTENIMIENTO DE ROLES ── */
   static async getRoles() { return await this.request('/autenticacion/roles/'); }
   static async createRol(data) { return await this.request('/autenticacion/roles/', { method: 'POST', body: JSON.stringify(data) }); }
   static async updateRol(id, data) { return await this.request(`/autenticacion/roles/${id}/`, { method: 'PUT', body: JSON.stringify(data) }); }
   static async toggleRolStatus(id) { return await this.request(`/autenticacion/roles/${id}/toggle-status/`, { method: 'POST' }); }
 
-  /* ── CATÁLOGOS Y PRODUCTOS ── */
   static async getCategorias() { return await this.request('/catalogos/categorias/'); }
   static async createCategoria(data) { return await this.request('/catalogos/categorias/', { method: 'POST', body: JSON.stringify(data) }); }
   static async updateCategoria(id, data) { return await this.request(`/catalogos/categorias/${id}/`, { method: 'PUT', body: JSON.stringify(data) }); }
@@ -166,7 +160,6 @@ class NohemyApi {
   static async updateProducto(id, data) { return await this.request(`/catalogos/productos/${id}/`, { method: 'PUT', body: JSON.stringify(data) }); }
   static async toggleProductoStatus(id) { return await this.request(`/catalogos/productos/${id}/toggle-status/`, { method: 'POST' }); }
 
-  /* ── COMPRAS E INVENTARIO ── */
   static async getCompras(params = {}) {
     const query = new URLSearchParams(params).toString();
     return await this.request(`/compras/compras/${query ? '?' + query : ''}`);
@@ -199,12 +192,17 @@ class NohemyApi {
       body: JSON.stringify(data),
     });
   }
+  static async aplicarDescuentoLote(loteId, data) {
+    return await this.request(`/inventario/lotes/${loteId}/aplicar-descuento/`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
   static async getAjustesInventario(params = {}) {
     const query = new URLSearchParams(params).toString();
     return await this.request(`/inventario/ajustes/${query ? '?' + query : ''}`);
   }
 
-  /* ── ENLACE DE ESCÁNER INALÁMBRICO / CELULAR (MÉTODO 1) ── */
   static async getEscanerInfo() {
     return await this.request('/inventario/escaner/sesion/');
   }
@@ -221,7 +219,6 @@ class NohemyApi {
     return await this.request(`/inventario/escaner/recibir/?session_id=${sessionId}&since_id=${sinceId}`);
   }
 
-  /* ── VENTAS Y FACTURACIÓN (POS) ── */
   static async getClientes(search = '') {
     const q = search ? `?search=${encodeURIComponent(search)}` : '';
     return await this.request(`/ventas/clientes/${q}`);
@@ -298,7 +295,6 @@ class NohemyApi {
     return await this.request(`/ventas/movimientos/${query ? '?' + query : ''}`);
   }
 
-  /* ── REPORTES Y ANALÍTICAS (RF-07.2) ── */
   static async getReporteFinanciero(params = {}) {
     const query = new URLSearchParams(params).toString();
     return await this.request(`/ventas/reportes/financiero/${query ? '?' + query : ''}`);
@@ -307,7 +303,6 @@ class NohemyApi {
     return await this.request('/ventas/reportes/mermas-fifo/');
   }
 
-  /* ── AUDITORÍA DEL SISTEMA (RF-07.1) ── */
   static async getBitacoraAuditoria(params = {}) {
     const query = new URLSearchParams(params).toString();
     return await this.request(`/auditoria/bitacora/${query ? '?' + query : ''}`);

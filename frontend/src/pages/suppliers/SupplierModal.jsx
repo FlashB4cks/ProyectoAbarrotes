@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconTruck } from '../../components/icons/Icons';
 
-/* ── MODAL: CREACIÓN / EDICIÓN DE PROVEEDORES ── */
 export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
   const [formData, setFormData] = useState({
     nombre_empresa: '',
@@ -129,10 +128,10 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
           <div className="form-grid">
             <div className="form-group full-width">
               <label>Nombre de la Empresa / Razón Social <span className="req">*</span></label>
-              <input 
-                type="text" 
-                name="nombre_empresa" 
-                value={formData.nombre_empresa} 
+              <input
+                type="text"
+                name="nombre_empresa"
+                value={formData.nombre_empresa}
                 onChange={handleChange}
                 className={errors.nombre_empresa ? 'input-error' : ''}
                 autoFocus
@@ -142,10 +141,10 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
 
             <div className="form-group">
               <label>NIT</label>
-              <input 
-                type="text" 
-                name="nit" 
-                value={formData.nit} 
+              <input
+                type="text"
+                name="nit"
+                value={formData.nit}
                 onChange={handleChange}
                 maxLength={9}
                 className={errors.nit ? 'input-error' : ''}
@@ -155,20 +154,20 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
 
             <div className="form-group">
               <label>Persona o Asesor de Contacto</label>
-              <input 
-                type="text" 
-                name="contacto" 
-                value={formData.contacto} 
+              <input
+                type="text"
+                name="contacto"
+                value={formData.contacto}
                 onChange={handleChange}
               />
             </div>
 
             <div className="form-group">
               <label>Teléfono de Contacto</label>
-              <input 
-                type="text" 
-                name="telefono" 
-                value={formData.telefono} 
+              <input
+                type="text"
+                name="telefono"
+                value={formData.telefono}
                 onChange={handleChange}
                 maxLength={8}
                 className={errors.telefono ? 'input-error' : ''}
@@ -178,10 +177,10 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
 
             <div className="form-group">
               <label>Correo Electrónico</label>
-              <input 
-                type="email" 
-                name="email" 
-                value={formData.email} 
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
                 className={errors.email ? 'input-error' : ''}
               />
@@ -190,10 +189,10 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
 
             <div className="form-group full-width">
               <label>Dirección Comercial / Bodega</label>
-              <input 
-                type="text" 
-                name="direccion" 
-                value={formData.direccion} 
+              <input
+                type="text"
+                name="direccion"
+                value={formData.direccion}
                 onChange={handleChange}
               />
             </div>
@@ -212,6 +211,5 @@ export const SupplierModal = ({ isOpen, onClose, onSave, editingSupplier }) => {
     </div>
   );
 };
-
 
 export default SupplierModal;

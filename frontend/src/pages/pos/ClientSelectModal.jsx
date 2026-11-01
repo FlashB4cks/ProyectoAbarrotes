@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
 import { IconPlus, IconSearch, IconUser } from '../../components/icons/Icons';
 
-/* ── COMPONENTE: MODAL PARA SELECCIONAR O CREAR CLIENTE (POS) ── */
 export const ClientSelectModal = ({ isOpen, onClose, onSelectClient, selectedClient }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [clientes, setClientes] = useState([]);
@@ -24,7 +23,7 @@ export const ClientSelectModal = ({ isOpen, onClose, onSelectClient, selectedCli
       const data = await NohemyApi.getClientes(search);
       setClientes(Array.isArray(data) ? data : data.results || []);
     } catch {
-      // Ignorar
+
     } finally {
       setLoading(false);
     }
@@ -63,7 +62,7 @@ export const ClientSelectModal = ({ isOpen, onClose, onSelectClient, selectedCli
     }
     const cleanNit = (newClient.nit || '').trim().toUpperCase();
     if (cleanNit === 'C/F' || cleanNit === 'CF') {
-      setErrorMsg('Para facturar a Consumidor Final use el botón superior "Usar Consumidor Final (C/F)".');
+      setErrorMsg('Para facturar a Consumidor Final use el botón superior "Usar Consumidor Final - C/F".');
       return;
     }
     if (cleanNit && /^\d+$/.test(cleanNit) && cleanNit.length > 8) {
@@ -128,7 +127,7 @@ export const ClientSelectModal = ({ isOpen, onClose, onSelectClient, selectedCli
               onClick={handleUseCF}
             >
               <IconUser size={15} />
-              <span>Usar "Consumidor Final" (C/F)</span>
+              <span>Usar Consumidor Final - C/F</span>
             </button>
             <button
               type="button"
@@ -294,6 +293,5 @@ export const ClientSelectModal = ({ isOpen, onClose, onSelectClient, selectedCli
     </div>
   );
 };
-
 
 export default ClientSelectModal;

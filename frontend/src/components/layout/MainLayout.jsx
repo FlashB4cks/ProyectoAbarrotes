@@ -18,13 +18,12 @@ import ReportsAnalyticsPage from '../../pages/reports/ReportsAnalyticsPage';
 import AuditLogPage from '../../pages/audit/AuditLogPage';
 import UsersPage from '../../pages/users/UsersPage';
 import ScannerModal from '../../pages/scanner/ScannerModal';
-/* ── COMPONENTE PRINCIPAL (ESCRITORIO) ── */
+
 export const MainLayout = () => {
   const { user, loading, updateUserState } = useAuth();
   const [activeTab, setActiveTab] = useState('pos');
   const [collapsed, setCollapsed] = useState(false);
 
-  // Estados del Escáner Inalámbrico / Celular
   const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
   const [scannerSession, setScannerSession] = useState(() => {
     try {
@@ -37,14 +36,13 @@ export const MainLayout = () => {
   const [scannerConnected, setScannerConnected] = useState(false);
   const [scannerToast, setScannerToast] = useState(null);
 
-  // Inicializar sesión de escáner al cargar
   const initScannerSession = async () => {
     try {
       const ses = await NohemyApi.createEscanerSesion();
       setScannerSession(ses);
       localStorage.setItem('nohemysys_scanner_session', JSON.stringify(ses));
     } catch {
-      // Ignorar fallo offline
+
     }
   };
 
@@ -54,7 +52,6 @@ export const MainLayout = () => {
     }
   }, []);
 
-  // Función común al recibir un código de barras (desde app HID, pistola o celular web)
   const handleReceiveBarcode = (barcode, source) => {
     playScannerBeep(true);
     setScannerToast({
@@ -62,12 +59,10 @@ export const MainLayout = () => {
       message: `Código recibido (${source}): ${barcode}`,
     });
 
-    // Despachar evento global
     window.dispatchEvent(new CustomEvent('nohemysys:barcode', {
       detail: { code: barcode, source }
     }));
 
-    // Asignar al input activo de código de barras si existe (catálogo / nuevo producto)
     const barcodeInput = document.querySelector('input[name="codigo_barras"]');
     if (barcodeInput) {
       const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
@@ -78,7 +73,6 @@ export const MainLayout = () => {
       }
     }
 
-    // Si el buscador del POS estaba enfocado y recibió caracteres durante la lectura, limpiarlo inmediatamente
     const posSearchInput = document.querySelector('.pos-search-input');
     if (posSearchInput) {
       const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
@@ -90,7 +84,6 @@ export const MainLayout = () => {
     }
   };
 
-  // 1. Escuchador de Teclado Rápido (Modo HID / Barcode to PC / Pistola USB o Bluetooth)
   useEffect(() => {
     let buffer = '';
     let lastKeyTime = Date.now();
@@ -103,8 +96,6 @@ export const MainLayout = () => {
       const interval = now - lastKeyTime;
       lastKeyTime = now;
 
-      // Lectura por pistola o app HID por USB envía caracteres en ráfagas rápidas.
-      // Se permite hasta 150ms de margen para apps móviles USB/Wi-Fi que puedan tener micro-pausas.
       if (interval > 150) {
         buffer = '';
       }
@@ -133,7 +124,6 @@ export const MainLayout = () => {
     };
   }, []);
 
-  // 2. Escuchador en segundo plano para Escáner Web Celular vinculado
   useEffect(() => {
     if (!scannerSession?.session_id) return;
 
@@ -142,7 +132,7 @@ export const MainLayout = () => {
       try {
         const res = await NohemyApi.recibirCodigoEscaner(scannerSession.session_id, sinceId);
         if (res.status === 'not_found') {
-          // Si el servidor reinició y la sesión expiró de memoria, regenerar sesión limpia
+
           initScannerSession();
         } else if (res.status === 'success') {
           if (res.conectado !== undefined) {
@@ -155,7 +145,7 @@ export const MainLayout = () => {
           }
         }
       } catch {
-        // En caso de fallo transitorio no interrumpir
+
       }
     }, 800);
 
@@ -183,8 +173,8 @@ export const MainLayout = () => {
     <div className="app-container">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} collapsed={collapsed} setCollapsed={setCollapsed} />
       <div className="main-content">
-        <Header 
-          activeTab={activeTab} 
+        <Header
+          activeTab={activeTab}
           onOpenScanner={() => setIsScannerModalOpen(true)}
           isScannerConnected={scannerConnected}
         />
@@ -197,20 +187,24 @@ export const MainLayout = () => {
         {activeTab === 'productos' && (
           <ProductsPage onOpenScanner={() => setIsScannerModalOpen(true)} />
         )}
-        {activeTab === 'clientes' && <ClientsPage />}
+        {activeTab === 'clientes' && (
+          <ModuleErrorBoundary name="Gestión de Clientes">
+            <ClientsPage />
+          </ModuleErrorBoundary>
+        )}
         {activeTab === 'compras' && (
-          (user?.rol === 'ADMINISTRADOR' || user?.rol === 'BODEGUERO' || user?.is_superuser) 
-            ? <PurchasesPage /> 
+          (user?.rol === 'ADMINISTRADOR' || user?.rol === 'BODEGUERO' || user?.is_superuser)
+            ? <PurchasesPage />
             : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores y Bodega.</div>
         )}
         {activeTab === 'proveedores' && (
-          (user?.rol === 'ADMINISTRADOR' || user?.rol === 'BODEGUERO' || user?.is_superuser) 
-            ? <SuppliersPage /> 
+          (user?.rol === 'ADMINISTRADOR' || user?.rol === 'BODEGUERO' || user?.is_superuser)
+            ? <SuppliersPage />
             : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores y Bodega.</div>
         )}
         {activeTab === 'inventario' && (
-          (user?.rol === 'ADMINISTRADOR' || user?.rol === 'BODEGUERO' || user?.is_superuser) 
-            ? <InventoryBatchesPage onNavigateToPurchases={() => setActiveTab('compras')} /> 
+          (user?.rol === 'ADMINISTRADOR' || user?.rol === 'BODEGUERO' || user?.is_superuser)
+            ? <InventoryBatchesPage onNavigateToPurchases={() => setActiveTab('compras')} />
             : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores y Bodega.</div>
         )}
         {activeTab === 'reportes' && (
@@ -228,13 +222,13 @@ export const MainLayout = () => {
           ) : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores.</div>
         )}
         {activeTab === 'usuarios' && (
-          (user?.rol === 'ADMINISTRADOR' || user?.is_superuser) 
-            ? <UsersPage /> 
+          (user?.rol === 'ADMINISTRADOR' || user?.is_superuser)
+            ? <UsersPage />
             : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores.</div>
         )}
       </div>
 
-      <ScannerModal 
+      <ScannerModal
         isOpen={isScannerModalOpen}
         onClose={() => setIsScannerModalOpen(false)}
         session={scannerSession}
@@ -242,7 +236,7 @@ export const MainLayout = () => {
         connectedDevice={scannerConnected ? 'Activo' : null}
       />
 
-      <ChangePasswordModal 
+      <ChangePasswordModal
         isOpen={forcePasswordChange}
         user={user}
         onSuccess={() => {

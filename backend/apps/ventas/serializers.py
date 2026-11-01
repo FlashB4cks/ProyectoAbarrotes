@@ -7,7 +7,6 @@ from .models import Cliente, SesionCaja, Venta, DetalleVenta, SalidaLoteVenta, M
 from apps.catalogos.models import Producto
 from apps.inventario.models import LoteInventario
 
-
 class ClienteSerializer(serializers.ModelSerializer):
     total_compras = serializers.SerializerMethodField()
     total_gastado = serializers.SerializerMethodField()
@@ -64,8 +63,7 @@ class ClienteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("El NIT numérico no puede exceder los 8 dígitos.")
             if len(v) > 9:
                 raise serializers.ValidationError("El NIT no puede exceder los 9 caracteres.")
-            
-            # Validar unicidad de NIT omitiendo C/F y S/N
+
             if v not in ['S/N', 'SN', 'C/F', 'CF', '']:
                 qs = Cliente.objects.filter(nit__iexact=v)
                 if instance:
@@ -97,7 +95,6 @@ class ClienteSerializer(serializers.ModelSerializer):
             return clean
         return value
 
-
 class SalidaLoteVentaSerializer(serializers.ModelSerializer):
     numero_lote = serializers.CharField(source='lote.numero_lote', read_only=True)
     fecha_vencimiento = serializers.DateField(source='lote.fecha_vencimiento', read_only=True)
@@ -113,7 +110,6 @@ class SalidaLoteVentaSerializer(serializers.ModelSerializer):
             'fecha_descuento',
         ]
         read_only_fields = ['id_salida', 'fecha_descuento']
-
 
 class DetalleVentaSerializer(serializers.ModelSerializer):
     producto_nombre = serializers.CharField(source='producto.nombre', read_only=True)
@@ -135,7 +131,6 @@ class DetalleVentaSerializer(serializers.ModelSerializer):
             'salidas_lote',
         ]
         read_only_fields = ['id_detalle_venta', 'subtotal']
-
 
 class VentaSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source='cliente.nombre_completo', read_only=True)
@@ -179,11 +174,9 @@ class VentaSerializer(serializers.ModelSerializer):
     def get_total_articulos(self, obj):
         return sum(d.cantidad for d in obj.detalles.all()) if obj.pk else 0
 
-
 class ItemVentaInputSerializer(serializers.Serializer):
     producto_id = serializers.IntegerField()
     cantidad = serializers.IntegerField(min_value=1)
-
 
 class VentaCreateSerializer(serializers.Serializer):
     cliente_id = serializers.IntegerField(required=False, allow_null=True)
@@ -199,7 +192,7 @@ class VentaCreateSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
-        # Validación estricta de turno de caja abierto (Control de Caja)
+
         sesion_activa = SesionCaja.objects.filter(estado=SesionCaja.EstadoCaja.ABIERTA).first()
         if not sesion_activa:
             raise serializers.ValidationError(
@@ -218,7 +211,6 @@ class VentaCreateSerializer(serializers.Serializer):
         descuento = Decimal(str(validated_data.get('descuento', 0.00)))
         monto_recibido = Decimal(str(validated_data.get('monto_recibido', 0.00)))
 
-        # 1. Resolver Cliente (Existente, nuevo o C/F por defecto)
         cliente = None
         if cliente_nuevo and cliente_nuevo.get('nombre_completo'):
             cliente = Cliente.objects.create(
@@ -240,7 +232,7 @@ class VentaCreateSerializer(serializers.Serializer):
             )
 
         with transaction.atomic():
-            # Generar correlativo único de factura
+
             ultimo_id = Venta.objects.select_for_update().count() + 1
             codigo_factura = f"FAC-{str(ultimo_id).zfill(6)}"
             while Venta.objects.filter(codigo_factura=codigo_factura).exists():
@@ -250,7 +242,6 @@ class VentaCreateSerializer(serializers.Serializer):
             subtotal_general = Decimal('0.00')
             detalles_para_crear = []
 
-            # 2. Validar stock y preparar descuentos FIFO por cada ítem
             for item in items_data:
                 prod_id = item['producto_id']
                 cant_solicitada = item['cantidad']
@@ -260,12 +251,6 @@ class VentaCreateSerializer(serializers.Serializer):
                 except Producto.DoesNotExist:
                     raise serializers.ValidationError(f"El producto con ID {prod_id} no existe o está inactivo.")
 
-                # Precio unitario: Establecido OBLIGATORIAMENTE por el catálogo oficial de la base de datos (SEC-01)
-                precio_unit = Decimal(str(producto.precio_venta))
-                subtotal_item = precio_unit * Decimal(cant_solicitada)
-                subtotal_general += subtotal_item
-
-                # Lotes disponibles ordenados por FIFO (primero fecha de vencimiento más próxima, luego ingreso)
                 lotes_disponibles = list(
                     LoteInventario.objects.select_for_update()
                     .filter(producto=producto, cantidad_actual__gt=0, is_active=True)
@@ -279,17 +264,24 @@ class VentaCreateSerializer(serializers.Serializer):
                         f"Solicitado: {cant_solicitada}, Disponible en lotes FIFO: {stock_total_lotes}."
                     )
 
-                # Calcular qué lotes se descuentan
                 descuentos_lotes = []
                 por_descontar = cant_solicitada
+                subtotal_item = Decimal('0.00')
 
                 for lote in lotes_disponibles:
                     if por_descontar <= 0:
                         break
-                    
+
                     tomar = min(lote.cantidad_actual, por_descontar)
                     lote.cantidad_actual -= tomar
                     lote.save(update_fields=['cantidad_actual'])
+
+                    precio_lote_unit = Decimal(str(producto.precio_venta))
+                    if lote.descuento_porcentaje and lote.descuento_porcentaje > Decimal('0.00'):
+                        factor = (Decimal('100.00') - lote.descuento_porcentaje) / Decimal('100.00')
+                        precio_lote_unit = (precio_lote_unit * factor).quantize(Decimal('0.01'))
+
+                    subtotal_item += precio_lote_unit * Decimal(tomar)
 
                     descuentos_lotes.append({
                         'lote': lote,
@@ -297,22 +289,23 @@ class VentaCreateSerializer(serializers.Serializer):
                     })
                     por_descontar -= tomar
 
-                # Descontar del stock general acumulado del producto
+                subtotal_general += subtotal_item
+                precio_unit_efectivo = (subtotal_item / Decimal(cant_solicitada)).quantize(Decimal('0.01'))
+
                 producto.stock_total = max(0, producto.stock_total - cant_solicitada)
                 producto.save(update_fields=['stock_total'])
 
                 detalles_para_crear.append({
                     'producto': producto,
                     'cantidad': cant_solicitada,
-                    'precio_unitario': precio_unit,
+                    'precio_unitario': precio_unit_efectivo,
                     'subtotal': subtotal_item,
                     'descuentos_lotes': descuentos_lotes,
                 })
 
-            # 3. Calcular totales y cambio con validación estricta de descuentos (SEC-01)
             if descuento > subtotal_general:
                 raise serializers.ValidationError("El descuento no puede ser superior al subtotal de la venta.")
-            
+
             if subtotal_general > 0 and (descuento / subtotal_general) > Decimal('0.25'):
                 es_admin = vendedor and (getattr(vendedor, 'rol', None) == 'ADMINISTRADOR' or getattr(vendedor, 'is_superuser', False))
                 if not es_admin:
@@ -331,14 +324,12 @@ class VentaCreateSerializer(serializers.Serializer):
                 monto_recibido = total_general
                 cambio = Decimal('0.00')
 
-            # Buscar sesión de caja abierta
             sesion_activa = SesionCaja.objects.filter(estado=SesionCaja.EstadoCaja.ABIERTA).first()
             if not sesion_activa:
                 raise serializers.ValidationError(
                     "No hay ningún turno de caja abierto en este momento. Por favor aperture la caja en 'Control de Caja'."
                 )
 
-            # 4. Crear la cabecera de la Venta
             venta = Venta.objects.create(
                 codigo_factura=codigo_factura,
                 vendedor=vendedor,
@@ -353,7 +344,6 @@ class VentaCreateSerializer(serializers.Serializer):
                 sesion_caja=sesion_activa,
             )
 
-            # 5. Crear detalles y trazabilidad de salidas por lote (FIFO)
             for d in detalles_para_crear:
                 detalle_obj = DetalleVenta.objects.create(
                     venta=venta,
@@ -370,7 +360,6 @@ class VentaCreateSerializer(serializers.Serializer):
                         cantidad_descontada=desc['cantidad_descontada'],
                     )
 
-            # 6. Registrar Movimiento Financiero (Ingreso por Venta)
             usuario_responsable = vendedor if (vendedor and vendedor.is_authenticated) else get_user_model().objects.filter(is_active=True).first()
             MovimientoFinanciero.objects.create(
                 usuario=usuario_responsable,
@@ -382,7 +371,6 @@ class VentaCreateSerializer(serializers.Serializer):
             )
 
             return venta
-
 
 class MovimientoFinancieroSerializer(serializers.ModelSerializer):
     usuario_nombre = serializers.SerializerMethodField()
@@ -409,7 +397,6 @@ class MovimientoFinancieroSerializer(serializers.ModelSerializer):
         if obj.usuario:
             return f"{obj.usuario.first_name} {obj.usuario.last_name}".strip() or obj.usuario.username
         return "Sistema"
-
 
 class SesionCajaSerializer(serializers.ModelSerializer):
     usuario_apertura_nombre = serializers.SerializerMethodField()

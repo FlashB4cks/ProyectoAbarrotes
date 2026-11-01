@@ -3,7 +3,6 @@ import { NohemyApi } from '../../api/nohemyApi';
 import { playScannerBeep } from '../../utils/audio';
 import { IconAlertTriangle } from '../../components/icons/Icons';
 
-/* ── MODAL: REGISTRAR MERMA / BAJA DE INVENTARIO ── */
 export const RegisterMermaModal = ({ isOpen, onClose, lote, onSuccess }) => {
   const [cantidad, setCantidad] = useState(1);
   const [tipo, setTipo] = useState('VENCIMIENTO');
@@ -34,7 +33,7 @@ export const RegisterMermaModal = ({ isOpen, onClose, lote, onSuccess }) => {
       return;
     }
     if (numCantidad > maxStock) {
-      setError(`La cantidad no puede superar las existencias del lote (${maxStock} uds).`);
+      setError(`La cantidad no puede superar las existencias disponibles: ${maxStock} unidades.`);
       return;
     }
     if (!motivo.trim()) {
@@ -192,6 +191,5 @@ export const RegisterMermaModal = ({ isOpen, onClose, lote, onSuccess }) => {
     </div>
   );
 };
-
 
 export default RegisterMermaModal;

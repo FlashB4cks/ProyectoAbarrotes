@@ -76,7 +76,6 @@ class CambiarPasswordView(APIView):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from .models import Rol

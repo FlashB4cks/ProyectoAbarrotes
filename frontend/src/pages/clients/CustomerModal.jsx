@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IconUser } from '../../components/icons/Icons';
 
-/* ── MODAL: CREAR / EDITAR CLIENTE (DIRECTORIO COMERCIAL) ── */
 export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
   const [formData, setFormData] = useState({
     nombre_completo: '',
@@ -41,12 +40,12 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
     const { name, value } = e.target;
     let val = value;
     if (name === 'nit') {
-      // Limitar a 9 caracteres con letras o guion, y si son solo dígitos limitar a 8 números
+
       const clean = value.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase().slice(0, 9);
       const isOnlyDigits = /^\d+$/.test(clean);
       val = isOnlyDigits ? clean.slice(0, 8) : clean.slice(0, 9);
     } else if (name === 'telefono') {
-      // Límite de 8 dígitos numéricos (estándar Guatemala)
+
       val = value.replace(/\D/g, '').slice(0, 8);
     } else if (name === 'dpi') {
       val = value.replace(/\D/g, '').slice(0, 13);
@@ -63,7 +62,7 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
     if (formData.nit && formData.nit.trim()) {
       const cleanNit = formData.nit.trim().toUpperCase();
       if (cleanNit === 'C/F' || cleanNit === 'CF') {
-        errs.nit = 'C/F es una opción reservada del Punto de Venta (POS). Registre aquí únicamente clientes con su NIT propio o deje el campo en blanco.';
+        errs.nit = 'C/F es una opción reservada del Punto de Venta. Registre aquí únicamente clientes con su NIT propio o deje el campo en blanco.';
       } else if (/^\d+$/.test(cleanNit) && cleanNit.length > 8) {
         errs.nit = 'El NIT numérico no puede exceder los 8 dígitos.';
       } else if (cleanNit.length > 9) {
@@ -126,7 +125,7 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
                 {editingCustomer ? 'Editar Ficha de Cliente' : 'Registrar Nuevo Cliente'}
               </h3>
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Directorio comercial de compradores para el Punto de Venta (POS)
+                Directorio comercial de compradores para el Punto de Venta
               </span>
             </div>
           </div>
@@ -145,7 +144,7 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
               <label style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '5px', display: 'block' }}>
                 Nombre Completo / Razón Social <span style={{ color: '#ef4444' }}>*</span>
               </label>
-              <input 
+              <input
                 type="text"
                 name="nombre_completo"
                 value={formData.nombre_completo}
@@ -162,7 +161,7 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
                 <label style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '5px', display: 'block' }}>
                   NIT
                 </label>
-                <input 
+                <input
                   type="text"
                   name="nit"
                   value={formData.nit}
@@ -178,7 +177,7 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
                 <label style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '5px', display: 'block' }}>
                   DPI
                 </label>
-                <input 
+                <input
                   type="text"
                   name="dpi"
                   value={formData.dpi}
@@ -196,7 +195,7 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
                 <label style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '5px', display: 'block' }}>
                   Teléfono
                 </label>
-                <input 
+                <input
                   type="text"
                   name="telefono"
                   value={formData.telefono}
@@ -212,7 +211,7 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
                 <label style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '5px', display: 'block' }}>
                   Dirección o Zona
                 </label>
-                <input 
+                <input
                   type="text"
                   name="direccion"
                   value={formData.direccion}
@@ -237,6 +236,5 @@ export const CustomerModal = ({ isOpen, onClose, onSave, editingCustomer }) => {
     </div>
   );
 };
-
 
 export default CustomerModal;

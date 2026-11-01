@@ -3,7 +3,7 @@ import { NohemyApi } from '../../api/nohemyApi';
 import { playScannerBeep } from '../../utils/audio';
 
 import SupplierModal from '../suppliers/SupplierModal';
-/* ── MODAL: REGISTRO DE COMPRA / INGRESO DE MERCADERÍA ── */
+
 export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, productos, onRefreshProveedores }) => {
   const [numeroComprobante, setNumeroComprobante] = useState('');
   const [proveedor, setProveedor] = useState('');
@@ -37,7 +37,6 @@ export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, prod
     }
   }, [isOpen]);
 
-  // Escuchar códigos de barras escaneados desde el celular por cable USB o Wi-Fi mientras el modal de compra está abierto
   useEffect(() => {
     const handleBarcodeEvent = (e) => {
       if (isOpen && e.detail?.code) {
@@ -198,7 +197,7 @@ export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, prod
           <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '20px' }}>
             <div className="form-group">
               <label>No. de Comprobante / Factura <span className="req">*</span></label>
-              <input 
+              <input
                 type="text"
                 placeholder="Ej. FAC-2024-00129"
                 value={numeroComprobante}
@@ -231,7 +230,7 @@ export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, prod
                   + Nuevo Proveedor
                 </button>
               </div>
-              <select 
+              <select
                 value={proveedor}
                 onChange={(e) => {
                   setProveedor(e.target.value);
@@ -256,9 +255,9 @@ export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, prod
             </h4>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <div style={{ position: 'relative' }}>
-                <input 
-                  type="text" 
-                  value={scanPurchaseInput} 
+                <input
+                  type="text"
+                  value={scanPurchaseInput}
                   onChange={(e) => setScanPurchaseInput(e.target.value)}
                   onKeyDown={handleScanPurchaseKeyDown}
                   placeholder="Disparar código con lector USB..."
@@ -315,7 +314,7 @@ export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, prod
                   return (
                     <tr key={idx}>
                       <td>
-                        <select 
+                        <select
                           className={`table-select ${errors[`item_${idx}_producto`] ? 'input-error' : ''}`}
                           value={it.producto}
                           onChange={(e) => handleItemChange(idx, 'producto', e.target.value)}
@@ -330,7 +329,7 @@ export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, prod
                         {errors[`item_${idx}_producto`] && <span className="error-text" style={{ fontSize: '11px' }}>{errors[`item_${idx}_producto`]}</span>}
                       </td>
                       <td>
-                        <input 
+                        <input
                           type="number"
                           min="1"
                           className={`table-input ${errors[`item_${idx}_cantidad`] ? 'input-error' : ''}`}
@@ -339,7 +338,7 @@ export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, prod
                         />
                       </td>
                       <td>
-                        <input 
+                        <input
                           type="number"
                           step="0.01"
                           min="0.01"
@@ -350,17 +349,29 @@ export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, prod
                         />
                       </td>
                       <td>
-                        <input 
-                          type="text"
-                          placeholder="LOT-XXXXX (Auto)"
-                          className="table-input"
-                          value={it.numero_lote}
-                          onChange={(e) => handleItemChange(idx, 'numero_lote', e.target.value)}
-                          title="Si se deja vacío, el sistema asignará el correlativo secuencial de la base de datos (LOT-XXXXX)"
-                        />
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '100%',
+                            padding: '6px 8px',
+                            borderRadius: '6px',
+                            background: 'rgba(184, 134, 11, 0.08)',
+                            color: 'var(--accent)',
+                            fontWeight: 600,
+                            fontSize: '11.5px',
+                            border: '1px dashed rgba(184, 134, 11, 0.3)',
+                            whiteSpace: 'nowrap',
+                            userSelect: 'none'
+                          }}
+                          title="El correlativo de lote se genera automáticamente en la base de datos al guardar la compra"
+                        >
+                          Lote Automático
+                        </span>
                       </td>
                       <td>
-                        <input 
+                        <input
                           type="date"
                           className="table-input"
                           value={it.fecha_vencimiento}
@@ -372,9 +383,9 @@ export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, prod
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         {items.length > 1 && (
-                          <button 
-                            type="button" 
-                            className="btn-remove-row" 
+                          <button
+                            type="button"
+                            className="btn-remove-row"
                             onClick={() => handleRemoveItem(idx)}
                             title="Eliminar fila"
                           >
@@ -421,6 +432,5 @@ export const NewPurchaseModal = ({ isOpen, onClose, onSuccess, proveedores, prod
     </div>
   );
 };
-
 
 export default NewPurchaseModal;

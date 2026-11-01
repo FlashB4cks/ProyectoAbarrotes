@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
 import { IconCashRegister, IconCheck } from '../../components/icons/Icons';
 
-/* ── MODAL: APERTURA DE CAJA (INICIO DE TURNO) ── */
 export const OpenCashModal = ({ isOpen, onClose, onSuccess }) => {
   const [montoInicial, setMontoInicial] = useState('150.00');
   const [loading, setLoading] = useState(false);
@@ -16,7 +15,7 @@ export const OpenCashModal = ({ isOpen, onClose, onSuccess }) => {
     e.preventDefault();
     const val = parseFloat(montoInicial);
     if (isNaN(val) || val < 0) {
-      setError('Ingrese un fondo inicial válido (mayor o igual a Q0.00).');
+      setError('Ingrese un fondo inicial válido mayor o igual a Q 0.00.');
       return;
     }
     setLoading(true);
@@ -109,6 +108,5 @@ export const OpenCashModal = ({ isOpen, onClose, onSuccess }) => {
     </div>
   );
 };
-
 
 export default OpenCashModal;

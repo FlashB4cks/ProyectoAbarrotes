@@ -3,8 +3,7 @@ import { NohemyApi } from '../../api/nohemyApi';
 import { playCashRegisterSound, playScannerBeep } from '../../utils/audio';
 import { IconBank, IconCard, IconCash } from '../../components/icons/Icons';
 
-/* ── COMPONENTE: MODAL DE PAGO Y FACTURACIÓN (CHECKOUT POS) ── */
-export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, total, client, onSuccessSale }) => {
+export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, total, client, onChangeClient, onSuccessSale }) => {
   const [metodoPago, setMetodoPago] = useState('EFECTIVO');
   const [montoRecibido, setMontoRecibido] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -18,7 +17,6 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
       setErrorMsg('');
       setSubmitting(false);
 
-      // Validar si la caja sigue abierta
       NohemyApi.getCajaActiva().then(res => {
         if (!res?.abierta) {
           setCajaAbierta(false);
@@ -55,7 +53,7 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
       return;
     }
     if (metodoPago === 'EFECTIVO' && parsedRecibido < total) {
-      setErrorMsg(`El monto recibido (Q ${parsedRecibido.toFixed(2)}) es menor al total a cobrar (Q ${total.toFixed(2)}).`);
+      setErrorMsg(`El monto recibido de Q ${parsedRecibido.toFixed(2)} es menor al total a cobrar de Q ${total.toFixed(2)}.`);
       return;
     }
 
@@ -104,18 +102,31 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
             <div>
               <h3>Cobro y Emisión de Factura</h3>
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Cliente: <strong>{client?.nombre_completo || 'Consumidor Final'}</strong> (NIT: {client?.nit || 'C/F'})
+                Cliente: <strong>{client?.nombre_completo || 'Consumidor Final'}</strong> • NIT: {client?.nit || 'C/F'}
               </span>
             </div>
           </div>
-          <button className="btn-close" onClick={onClose} disabled={submitting}>✕</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {onChangeClient && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '11px', padding: '3px 8px' }}
+                onClick={onChangeClient}
+                disabled={submitting}
+                title="Cambiar cliente o NIT antes de cobrar"
+              >
+                Cambiar Cliente
+              </button>
+            )}
+            <button className="btn-close" onClick={onClose} disabled={submitting}>✕</button>
+          </div>
         </div>
 
         <form onSubmit={handleConfirmSale}>
           <div className="modal-body">
             {errorMsg && <div className="alert alert-danger" style={{ marginBottom: '14px' }}>{errorMsg}</div>}
 
-            {/* Total Display Grande */}
             <div style={{
               background: 'linear-gradient(135deg, rgba(184, 134, 11, 0.15), rgba(184, 134, 11, 0.05))',
               border: '2px solid var(--accent)',
@@ -135,7 +146,6 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
               </div>
             </div>
 
-            {/* Selector de Método de Pago */}
             <div className="form-group" style={{ marginBottom: '16px' }}>
               <label style={{ fontSize: '13px', fontWeight: 700 }}>Método de Pago</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '6px' }}>
@@ -177,11 +187,10 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
               </div>
             </div>
 
-            {/* Opciones cuando es EFECTIVO */}
             {metodoPago === 'EFECTIVO' ? (
               <div style={{ background: 'var(--input-bg)', padding: '16px', borderRadius: '10px', border: '1px solid var(--card-border)', marginBottom: '14px' }}>
                 <div className="form-group" style={{ marginBottom: '10px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 700 }}>Monto Recibido en Quetzales (Q)</label>
+                  <label style={{ fontSize: '13px', fontWeight: 700 }}>Monto Recibido en Quetzales</label>
                   <input
                     type="number"
                     step="0.01"
@@ -195,7 +204,6 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
                   />
                 </div>
 
-                {/* Billetes rápidos de Quetzales */}
                 <div style={{ marginBottom: '14px' }}>
                   <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
                     Billetes rápidos GTQ:
@@ -223,7 +231,6 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
                   </div>
                 </div>
 
-                {/* Cálculo en vivo de Cambio / Vuelto */}
                 <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -277,6 +284,5 @@ export const CheckoutModal = ({ isOpen, onClose, cartItems, subtotal, discount, 
     </div>
   );
 };
-
 
 export default CheckoutModal;

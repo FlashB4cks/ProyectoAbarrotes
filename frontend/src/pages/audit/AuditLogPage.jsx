@@ -1,17 +1,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { Toast } from '../../components/common';
+import { Toast, Pagination, usePagination } from '../../components/common';
 import { IconAlertTriangle, IconBarChart, IconCalendar, IconLayers, IconPrinter, IconRefresh, IconSearch, IconShieldCheck, IconShoppingBag, IconUser } from '../../components/icons/Icons';
 
-/* ── COMPONENTE: BITÁCORA DE AUDITORÍA DEL SISTEMA (RF-07.1) ── */
 export const AuditLogPage = () => {
   const [logs, setLogs] = useState([]);
   const [resumen, setResumen] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [accion, setAccion] = useState('TODAS');
-  const [periodo, setPeriodo] = useState('todo'); // 'hoy' | 'semana' | 'mes' | 'todo'
+  const [periodo, setPeriodo] = useState('todo');
   const [toast, setToast] = useState(null);
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    paginatedItems: paginatedLogs,
+    totalItems
+  } = usePagination(logs, 15);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, accion, periodo, setCurrentPage]);
 
   const loadAuditData = useCallback(async () => {
     try {
@@ -122,7 +134,7 @@ export const AuditLogPage = () => {
 
   return (
     <div className="page-container" style={{ padding: '24px' }}>
-      {/* Tarjetas KPI de Auditoría */}
+
       <div className="inv-kpi-grid" style={{ marginBottom: '24px' }}>
         <div className="inv-kpi-card kpi-total">
           <div className="kpi-header">
@@ -177,7 +189,6 @@ export const AuditLogPage = () => {
         </div>
       </div>
 
-      {/* Barra de Filtros y Búsqueda */}
       <div className="no-print" style={{
         background: 'var(--card-bg)',
         border: '1px solid var(--border-color)',
@@ -280,8 +291,8 @@ export const AuditLogPage = () => {
           >
             <option value="todo">Todo el Historial</option>
             <option value="hoy">Solo Hoy</option>
-            <option value="semana">Últimos 7 Días</option>
-            <option value="mes">Últimos 30 Días</option>
+            <option value="semana">Semana</option>
+            <option value="mes">Mes</option>
           </select>
         </div>
 
@@ -309,19 +320,18 @@ export const AuditLogPage = () => {
         </div>
       </div>
 
-      {/* Tabla de Auditoría */}
       <div className="report-panel">
         <div className="report-panel-header">
           <span className="report-panel-title">
             <IconShieldCheck size={16} />
             <span>Registros de Bitácora</span>
           </span>
-          <span style={{ 
-            fontSize: '12px', 
-            fontWeight: 600, 
-            color: 'var(--accent)', 
-            background: 'rgba(184, 134, 11, 0.08)', 
-            padding: '3px 10px', 
+          <span style={{
+            fontSize: '12px',
+            fontWeight: 600,
+            color: 'var(--accent)',
+            background: 'rgba(184, 134, 11, 0.08)',
+            padding: '3px 10px',
             borderRadius: '12px',
             border: '1px solid rgba(184, 134, 11, 0.2)'
           }}>
@@ -356,7 +366,7 @@ export const AuditLogPage = () => {
                   </td>
                 </tr>
               ) : (
-                logs.map(log => {
+                paginatedLogs.map(log => {
                   const logDt = formatLogDate(log.fecha_hora);
                   return (
                     <tr key={log.id_log}>
@@ -373,9 +383,9 @@ export const AuditLogPage = () => {
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '10.5px', marginTop: '2px' }}>
                           <span style={{ color: 'var(--accent)', fontWeight: 600 }}>@{log.usuario_username}</span>
                           <span style={{ color: 'var(--text-muted)' }}>•</span>
-                          <span style={{ 
-                            textTransform: 'uppercase', 
-                            fontSize: '9px', 
+                          <span style={{
+                            textTransform: 'uppercase',
+                            fontSize: '9px',
                             fontWeight: 700,
                             color: 'var(--text-muted)',
                             background: 'rgba(0,0,0,0.04)',
@@ -390,13 +400,13 @@ export const AuditLogPage = () => {
                         {getActionBadge(log.accion)}
                       </td>
                       <td className="audit-col-modulo">
-                        <span style={{ 
-                          fontFamily: 'monospace', 
-                          fontSize: '10.5px', 
+                        <span style={{
+                          fontFamily: 'monospace',
+                          fontSize: '10.5px',
                           fontWeight: 700,
-                          background: '#f8fafc', 
-                          color: '#475569', 
-                          padding: '2px 6px', 
+                          background: '#f8fafc',
+                          color: '#475569',
+                          padding: '2px 6px',
                           borderRadius: '4px',
                           border: '1px solid #e2e8f0',
                           textTransform: 'uppercase',
@@ -421,12 +431,20 @@ export const AuditLogPage = () => {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => { setPageSize(newSize); setCurrentPage(1); }}
+          pageSizeOptions={[15, 25, 50, 100]}
+          itemName="eventos de auditoría"
+        />
       </div>
 
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 };
-
 
 export default AuditLogPage;

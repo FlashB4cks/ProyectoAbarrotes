@@ -1,6 +1,5 @@
 import React from 'react';
 
-/* ── ICONO VECTORIAL: PROVEEDOR / LOGÍSTICA (SILUETA NOHEMYSYS) ── */
 export const IconTruck = ({ size = 18, style = {} }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
     <rect x="1" y="3" width="15" height="13" rx="1" />
@@ -10,9 +9,6 @@ export const IconTruck = ({ size = 18, style = {} }) => (
   </svg>
 );
 
-
-
-/* ── ICONOS SILUETA VECTORIAL (ESTILO MINIMALISTA NOHEMYSYS) ── */
 export const IconUser = ({ size = 18, style = {} }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -231,8 +227,6 @@ export const IconTrendingUp = ({ size = 16, style = {} }) => (
   </svg>
 );
 
-
-// Icono Oficial de Moneda Nacional: Quetzal (Q)
 export const IconQuetzal = ({ size = 16, style = {} }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
     <circle cx="12" cy="12" r="9" />
@@ -255,12 +249,8 @@ export const IconCreditCard = ({ size = 16, style = {} }) => (
   </svg>
 );
 
-// Alias de seguridad: si algún componente invoca IconDollarSign, se renderiza IconQuetzal
 export const IconDollarSign = IconQuetzal;
 
-
-
-/* ── HELPER: SILUETA VECTORIAL SEGÚN CATEGORÍA ── */
 export const CategorySilhouetteIcon = ({ name = '', size = 16, style = {} }) => {
   const c = String(name).toLowerCase();
   if (c.includes('grano') || c.includes('arroz') || c.includes('frijol') || c.includes('cereal')) {

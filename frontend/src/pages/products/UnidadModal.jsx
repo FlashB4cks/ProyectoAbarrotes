@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-/* ── MODAL: CREACIÓN / EDICIÓN DE UNIDAD DE MEDIDA ── */
 export const UnidadModal = ({ isOpen, onClose, onSave, editingUnidad }) => {
   const [formData, setFormData] = useState({ nombre: '', simbolo: '' });
   const [errors, setErrors] = useState({});
@@ -71,11 +70,11 @@ export const UnidadModal = ({ isOpen, onClose, onSave, editingUnidad }) => {
           )}
           <div className="form-group" style={{ marginBottom: '14px' }}>
             <label>Nombre de la Unidad <span className="req">*</span></label>
-            <input 
-              type="text" 
-              name="nombre" 
-              value={formData.nombre} 
-              onChange={handleChange} 
+            <input
+              type="text"
+              name="nombre"
+              value={formData.nombre}
+              onChange={handleChange}
               placeholder="Kilogramo, Unidad, Litro, Libra..."
               className={errors.nombre ? 'input-error' : ''}
               autoFocus
@@ -84,11 +83,11 @@ export const UnidadModal = ({ isOpen, onClose, onSave, editingUnidad }) => {
           </div>
           <div className="form-group" style={{ marginBottom: '14px' }}>
             <label>Símbolo / Abreviatura <span className="req">*</span></label>
-            <input 
-              type="text" 
-              name="simbolo" 
-              value={formData.simbolo} 
-              onChange={handleChange} 
+            <input
+              type="text"
+              name="simbolo"
+              value={formData.simbolo}
+              onChange={handleChange}
               placeholder="kg, unid, lt, lb..."
               className={errors.simbolo ? 'input-error' : ''}
             />

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
 import { IconCash } from '../../components/icons/Icons';
 
-/* ── MODAL: ENTRADA / SALIDA DE EFECTIVO (GASTO MENOR) ── */
 export const CashMovementModal = ({ isOpen, onClose, onSuccess, initialType = 'INGRESO' }) => {
   const [tipo, setTipo] = useState(initialType);
   const [monto, setMonto] = useState('');
@@ -171,6 +170,5 @@ export const CashMovementModal = ({ isOpen, onClose, onSuccess, initialType = 'I
     </div>
   );
 };
-
 
 export default CashMovementModal;

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-/* ── MODAL: CREACIÓN / EDICIÓN DE ROLES ── */
 export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
   const [formData, setFormData] = useState({
     codigo: '',
@@ -80,11 +79,11 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
           )}
           <div className="form-group" style={{ marginBottom: '14px' }}>
             <label>Código Identificador <span className="req">*</span></label>
-            <input 
-              type="text" 
-              name="codigo" 
-              value={formData.codigo} 
-              onChange={handleChange} 
+            <input
+              type="text"
+              name="codigo"
+              value={formData.codigo}
+              onChange={handleChange}
               placeholder="SUPERVISOR, CAJERO..."
               disabled={Boolean(editingRol)}
               className={errors.codigo ? 'input-error' : ''}
@@ -95,11 +94,11 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
           </div>
           <div className="form-group" style={{ marginBottom: '14px' }}>
             <label>Nombre del Rol <span className="req">*</span></label>
-            <input 
-              type="text" 
-              name="nombre" 
-              value={formData.nombre} 
-              onChange={handleChange} 
+            <input
+              type="text"
+              name="nombre"
+              value={formData.nombre}
+              onChange={handleChange}
               placeholder="Supervisor de Sucursal"
               className={errors.nombre ? 'input-error' : ''}
               autoFocus={Boolean(editingRol)}
@@ -108,23 +107,23 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
           </div>
           <div className="form-group" style={{ marginBottom: '14px' }}>
             <label>Descripción de Funciones</label>
-            <textarea 
-              name="descripcion" 
-              rows="3" 
-              value={formData.descripcion} 
-              onChange={handleChange} 
+            <textarea
+              name="descripcion"
+              rows="3"
+              value={formData.descripcion}
+              onChange={handleChange}
               placeholder="Responsabilidades y alcance en el negocio..."
               style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13.5px', resize: 'vertical' }}
             />
           </div>
           <div className="form-group" style={{ marginBottom: '14px' }}>
             <label>Permisos / Alcance Técnico</label>
-            <input 
-              type="text" 
-              name="permisos" 
-              value={formData.permisos} 
-              onChange={handleChange} 
-              placeholder="POS, Ventas, Reportes, Cierre de Caja"
+            <input
+              type="text"
+              name="permisos"
+              value={formData.permisos}
+              onChange={handleChange}
+              placeholder="Ventas, Reportes, Cierre de Caja, Facturación"
             />
           </div>
           <div className="modal-footer" style={{ marginTop: '20px' }}>

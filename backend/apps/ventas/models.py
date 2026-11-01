@@ -65,7 +65,6 @@ class SesionCaja(models.Model):
         verbose_name="Estado de Caja"
     )
 
-    # Arqueo y totales consolidados
     total_ventas_efectivo = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Ventas en Efectivo")
     total_ventas_tarjeta = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Ventas con Tarjeta")
     total_ventas_transferencia = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Ventas por Transferencia")
@@ -85,7 +84,6 @@ class SesionCaja(models.Model):
 
     def __str__(self):
         return f"Caja #{self.id_sesion} ({self.estado}) - {self.fecha_apertura.strftime('%d/%m/%Y %H:%M')}"
-
 
 class Venta(models.Model):
     class MetodoPago(models.TextChoices):
@@ -120,7 +118,6 @@ class Venta(models.Model):
     def __str__(self):
         return f"Factura #{self.codigo_factura} - Total: Q{self.total}"
 
-
 class DetalleVenta(models.Model):
     id_detalle_venta = models.BigAutoField(primary_key=True)
     venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='detalles', verbose_name="Venta")
@@ -137,7 +134,6 @@ class DetalleVenta(models.Model):
     def __str__(self):
         return f"{self.cantidad}x {self.producto.nombre} en Factura #{self.venta.codigo_factura}"
 
-
 class SalidaLoteVenta(models.Model):
     id_salida = models.BigAutoField(primary_key=True)
     detalle_venta = models.ForeignKey(DetalleVenta, on_delete=models.CASCADE, related_name='salidas_lote', verbose_name="Detalle de Venta")
@@ -152,7 +148,6 @@ class SalidaLoteVenta(models.Model):
 
     def __str__(self):
         return f"Salida {self.cantidad_descontada} un. del Lote #{self.lote.numero_lote}"
-
 
 class MovimientoFinanciero(models.Model):
     class TipoMovimiento(models.TextChoices):

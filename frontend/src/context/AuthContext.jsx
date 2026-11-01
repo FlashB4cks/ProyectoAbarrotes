@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import NohemyApi, { STORAGE_KEYS } from '../api/nohemyApi';
 
-/* ── CONTEXTO DE AUTENTICACIÓN ── */
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {

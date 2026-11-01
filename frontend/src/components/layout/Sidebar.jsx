@@ -2,7 +2,6 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { IconBarChart, IconCashRegister, IconShieldCheck, IconTruck, IconUser } from '../../components/icons/Icons';
 
-/* ── COMPONENTE: BARRA LATERAL ── */
 export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) => {
   const { logout, user } = useAuth();
 
@@ -33,11 +32,11 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
       <nav className="sidebar-nav">
         <div className="nav-group">
           <span className="nav-section-title">VENTAS Y CAJA</span>
-          
-          <button 
+
+          <button
             className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`}
             onClick={() => setActiveTab('pos')}
-            title="Punto de Venta (POS)"
+            title="Punto de Venta"
           >
             <span className="nav-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -46,13 +45,13 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
               </svg>
             </span>
-            <span className="nav-text">Punto de Venta (POS)</span>
+            <span className="nav-text">Punto de Venta</span>
           </button>
 
-          <button 
+          <button
             className={`nav-item ${activeTab === 'caja' ? 'active' : ''}`}
             onClick={() => setActiveTab('caja')}
-            title="Control de Caja (Arqueo y Turnos)"
+            title="Control de Caja"
           >
             <span className="nav-icon">
               <IconCashRegister size={20} />
@@ -60,7 +59,7 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
             <span className="nav-text">Control de Caja</span>
           </button>
 
-          <button 
+          <button
             className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`}
             onClick={() => setActiveTab('productos')}
             title="Gestión de Productos"
@@ -75,7 +74,7 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
             <span className="nav-text">Catálogo Productos</span>
           </button>
 
-          <button 
+          <button
             className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`}
             onClick={() => setActiveTab('clientes')}
             title="Gestión de Clientes"
@@ -89,7 +88,7 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
           {isBodegueroOrAdmin && (
             <>
               <span className="nav-section-title" style={{ marginTop: '12px' }}>ABASTECIMIENTO</span>
-              <button 
+              <button
                 className={`nav-item ${activeTab === 'compras' ? 'active' : ''}`}
                 onClick={() => setActiveTab('compras')}
                 title="Gestión de Compras"
@@ -104,7 +103,7 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
                 <span className="nav-text">Gestión de Compras</span>
               </button>
 
-              <button 
+              <button
                 className={`nav-item ${activeTab === 'proveedores' ? 'active' : ''}`}
                 onClick={() => setActiveTab('proveedores')}
                 title="Gestión de Proveedores"
@@ -115,10 +114,10 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
                 <span className="nav-text">Proveedores</span>
               </button>
 
-              <button 
+              <button
                 className={`nav-item ${activeTab === 'inventario' ? 'active' : ''}`}
                 onClick={() => setActiveTab('inventario')}
-                title="Inventario y Lotes FIFO"
+                title="Inventario y Lotes PEPS"
               >
                 <span className="nav-icon">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -135,7 +134,7 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
           {isAdmin && (
             <>
               <span className="nav-section-title" style={{ marginTop: '12px' }}>ADMINISTRACIÓN</span>
-              <button 
+              <button
                 className={`nav-item ${activeTab === 'reportes' ? 'active' : ''}`}
                 onClick={() => setActiveTab('reportes')}
                 title="Reportes y Analíticas"
@@ -146,7 +145,7 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
                 <span className="nav-text">Reportes Financieros</span>
               </button>
 
-              <button 
+              <button
                 className={`nav-item ${activeTab === 'auditoria' ? 'active' : ''}`}
                 onClick={() => setActiveTab('auditoria')}
                 title="Bitácora de Auditoría"
@@ -157,7 +156,7 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
                 <span className="nav-text">Bitácora Auditoría</span>
               </button>
 
-              <button 
+              <button
                 className={`nav-item ${activeTab === 'usuarios' ? 'active' : ''}`}
                 onClick={() => setActiveTab('usuarios')}
                 title="Gestión de Usuarios"
@@ -194,6 +193,5 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed }) =>
     </aside>
   );
 };
-
 
 export default Sidebar;

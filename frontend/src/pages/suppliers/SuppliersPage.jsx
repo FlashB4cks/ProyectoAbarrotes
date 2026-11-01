@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { Toast, ConfirmModal } from '../../components/common';
+import { Toast, ConfirmModal, Pagination, usePagination } from '../../components/common';
 import { IconCheck, IconTruck } from '../../components/icons/Icons';
 
 import SupplierModal from './SupplierModal';
-/* ── COMPONENTE: GESTIÓN DE PROVEEDORES (RF-06 / MÓDULO 3) ── */
+
 export const SuppliersContent = ({ onSupplierChanged }) => {
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, ACTIVE, INACTIVE
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
@@ -90,9 +90,22 @@ export const SuppliersContent = ({ onSupplierChanged }) => {
   const activosCount = proveedores.filter(p => p.is_active).length;
   const inactivosCount = proveedores.filter(p => !p.is_active).length;
 
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    paginatedItems: paginatedProveedores,
+    totalItems
+  } = usePagination(filteredProveedores, 10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, setCurrentPage]);
+
   return (
     <div>
-      {/* Tarjetas KPI de Proveedores */}
+
       <div className="inv-kpi-grid">
         <div className="inv-kpi-card kpi-total">
           <div className="kpi-header">
@@ -114,7 +127,7 @@ export const SuppliersContent = ({ onSupplierChanged }) => {
 
         <div className="inv-kpi-card kpi-danger">
           <div className="kpi-header">
-            <span>Dados de Baja (Soft Delete)</span>
+            <span>Dados de Baja</span>
             <span style={{ color: inactivosCount > 0 ? '#dc2626' : 'var(--text-muted)', display: 'flex' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
@@ -132,27 +145,27 @@ export const SuppliersContent = ({ onSupplierChanged }) => {
         <div className="card-header">
           <div className="search-and-filter-group">
             <div className="search-box">
-              <input 
-                type="text" 
-                placeholder="Buscar por Empresa, Contacto, NIT o Teléfono..." 
+              <input
+                type="text"
+                placeholder="Buscar por Empresa, Contacto, NIT o Teléfono..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <select 
-              value={statusFilter} 
+            <select
+              value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="select-status-filter"
             >
               <option value="ALL">Todos los Estados</option>
-              <option value="ACTIVE">Solo Activos (Ocultar dados de baja)</option>
+              <option value="ACTIVE">Solo Activos</option>
               <option value="INACTIVE">Solo Dados de Baja</option>
             </select>
           </div>
 
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             onClick={() => { setEditingSupplier(null); setIsModalOpen(true); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}
           >
@@ -187,8 +200,8 @@ export const SuppliersContent = ({ onSupplierChanged }) => {
                   </td>
                 </tr>
               ) : (
-                filteredProveedores.map((p) => {
-                  const fechaStr = p.fecha_registro 
+                paginatedProveedores.map((p) => {
+                  const fechaStr = p.fecha_registro
                     ? new Date(p.fecha_registro).toLocaleDateString('es-GT', { year: 'numeric', month: 'short', day: 'numeric' })
                     : '';
 
@@ -264,6 +277,16 @@ export const SuppliersContent = ({ onSupplierChanged }) => {
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => { setPageSize(newSize); setCurrentPage(1); }}
+          pageSizeOptions={[10, 20, 50, 100]}
+          itemName="proveedores"
+        />
       </div>
 
       <SupplierModal
@@ -288,7 +311,6 @@ export const SuppliersContent = ({ onSupplierChanged }) => {
   );
 };
 
-
 export const SuppliersPage = ({ onSupplierChanged }) => {
   return (
     <div className="view-panel">
@@ -296,6 +318,5 @@ export const SuppliersPage = ({ onSupplierChanged }) => {
     </div>
   );
 };
-
 
 export default SuppliersPage;

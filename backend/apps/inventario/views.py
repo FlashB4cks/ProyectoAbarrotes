@@ -16,7 +16,6 @@ from apps.catalogos.models import Producto
 from apps.auditoria.services import registrar_auditoria
 from apps.autenticacion.permissions import IsAdminUserRole
 
-# Memoria de sesiones para enlace de escáner en tiempo real
 _SCANNER_SESSIONS = {}
 
 import subprocess
@@ -39,9 +38,9 @@ def get_network_interfaces():
                 lower_header = header.lower()
                 is_usb = 'usb' in lower_header or 'rndis' in lower_header or ip.startswith('192.168.42.') or ip.startswith('172.20.10.')
                 is_wifi = 'wi-fi' in lower_header or 'inalambric' in lower_header or 'wireless' in lower_header
-                
+
                 label = f"📱 Cable USB ({ip})" if is_usb else (f"📶 Wi-Fi ({ip})" if is_wifi else f"🌐 Red Local ({ip})")
-                
+
                 item = {
                     'ip': ip,
                     'name': header,
@@ -80,7 +79,6 @@ def get_network_interfaces():
     default_ip = usb_ip or interfaces[0]['ip']
     return default_ip, usb_ip, interfaces
 
-
 class EscanerSesionView(APIView):
     """
     Genera o consulta una sesión de enlace para usar el teléfono como escáner por cable USB o Wi-Fi.
@@ -100,7 +98,7 @@ class EscanerSesionView(APIView):
 
     def post(self, request):
         now = time.time()
-        # Limpieza de sesiones de más de 2 horas
+
         expired = [sid for sid, s in _SCANNER_SESSIONS.items() if now - s['created_at'] > 7200]
         for sid in expired:
             _SCANNER_SESSIONS.pop(sid, None)
@@ -108,7 +106,7 @@ class EscanerSesionView(APIView):
         session_id = str(uuid.uuid4())[:8]
         pin = f"{int(now * 1000) % 9000 + 1000}"
         default_ip, usb_ip, interfaces = get_network_interfaces()
-        
+
         _SCANNER_SESSIONS[session_id] = {
             'pin': pin,
             'last_code': None,
@@ -130,7 +128,6 @@ class EscanerSesionView(APIView):
             'qr_url': qr_url,
             'created_at': now
         }, status=status.HTTP_200_OK)
-
 
 class EscanerEnviarView(APIView):
     """
@@ -164,7 +161,6 @@ class EscanerEnviarView(APIView):
 
         session['dispositivo'] = dispositivo
 
-        # Si es un ping de vinculación / handshake
         if codigo_limpio in ('__PING__', 'PING_HANDSHAKE'):
             return Response({
                 'status': 'success',
@@ -184,7 +180,6 @@ class EscanerEnviarView(APIView):
             'code_id': session['last_code_id'],
             'total_escaneos': session['total_escaneos']
         }, status=status.HTTP_200_OK)
-
 
 class EscanerRecibirView(APIView):
     """
@@ -226,7 +221,6 @@ class EscanerRecibirView(APIView):
             'conectado': bool(session['dispositivo'])
         }, status=status.HTTP_200_OK)
 
-
 class LoteInventarioViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = LoteInventario.objects.select_related(
@@ -235,7 +229,7 @@ class LoteInventarioViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LoteInventarioSerializer
 
     def get_permissions(self):
-        if self.action in ['registrar_merma']:
+        if self.action in ['registrar_merma', 'aplicar_descuento']:
             return [IsAdminUserRole()]
         return [permissions.IsAuthenticated()]
 
@@ -293,7 +287,6 @@ class LoteInventarioViewSet(viewsets.ReadOnlyModelViewSet):
         )
         vigentes = lotes_activos.filter(fecha_vencimiento__gt=hoy + datetime.timedelta(days=30))
 
-        # Cálculos monetarios y unidades
         unidades_vencidas = sum(l.cantidad_actual for l in vencidos)
         perdida_vencidos_gtq = sum(float(l.cantidad_actual * l.costo_unitario) for l in vencidos)
 
@@ -309,7 +302,6 @@ class LoteInventarioViewSet(viewsets.ReadOnlyModelViewSet):
         total_unidades = sum(l.cantidad_actual for l in lotes_activos)
         total_valor_inventario = sum(float(l.cantidad_actual * l.costo_unitario) for l in lotes_activos)
 
-        # Stock crítico de productos
         prods_activos = Producto.objects.filter(is_active=True)
         total_productos = prods_activos.count()
         prods_agotados = prods_activos.filter(stock_total=0).count()
@@ -418,23 +410,19 @@ class LoteInventarioViewSet(viewsets.ReadOnlyModelViewSet):
         if not motivo:
             return Response({'detail': 'Debe especificar el motivo o justificación de la merma/baja.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Cálculo de pérdida monetaria
         perdida_total = Decimal(str(cantidad)) * lote.costo_unitario
 
-        # 1. Descontar del lote con bloqueo pesimista (SEC-07)
         lote = LoteInventario.objects.select_for_update().get(pk=lote.pk)
         lote.cantidad_actual -= cantidad
         if lote.cantidad_actual == 0:
             lote.is_active = False
         lote.save(update_fields=['cantidad_actual', 'is_active'])
 
-        # 2. Descontar del producto atómicamente a nivel de BD
         producto = lote.producto
         Producto.objects.filter(pk=producto.pk).update(
             stock_total=models.F('stock_total') - cantidad
         )
 
-        # 3. Registrar el Ajuste / Merma
         ajuste = AjusteInventario.objects.create(
             lote=lote,
             tipo=tipo,
@@ -445,7 +433,6 @@ class LoteInventarioViewSet(viewsets.ReadOnlyModelViewSet):
             usuario=request.user
         )
 
-        # 4. Registrar en Auditoría
         ip_addr = request.META.get('REMOTE_ADDR')
         registrar_auditoria(
             usuario=request.user,
@@ -462,6 +449,40 @@ class LoteInventarioViewSet(viewsets.ReadOnlyModelViewSet):
             'lote': LoteInventarioSerializer(lote).data
         }, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['post', 'patch'], url_path='aplicar-descuento')
+    def aplicar_descuento(self, request, pk=None):
+        lote = self.get_object()
+        descuento_raw = request.data.get('descuento_porcentaje', 0)
+        motivo = request.data.get('motivo_descuento', '').strip()
+
+        try:
+            descuento = Decimal(str(descuento_raw))
+        except (ValueError, TypeError):
+            return Response({'detail': 'El porcentaje de descuento debe ser un valor numérico.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if descuento < Decimal('0.00') or descuento > Decimal('99.00'):
+            return Response({'detail': 'El descuento debe estar entre 0% y 99%.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        descuento_anterior = lote.descuento_porcentaje
+        lote.descuento_porcentaje = descuento
+        lote.motivo_descuento = motivo
+        lote.save(update_fields=['descuento_porcentaje', 'motivo_descuento'])
+
+        ip_addr = request.META.get('REMOTE_ADDR')
+        accion_desc = f"Descuento en Lote #{lote.numero_lote} ({lote.producto.nombre}): {descuento}% (anterior: {descuento_anterior}%). Motivo: {motivo or 'Sin motivo'}"
+        registrar_auditoria(
+            usuario=request.user,
+            accion='DESCUENTO_LOTE',
+            tabla_afectada='lotes_inventario',
+            descripcion=accion_desc,
+            ip_origen=ip_addr
+        )
+
+        return Response({
+            'status': 'success',
+            'message': f'Descuento del {descuento}% asignado exitosamente al lote #{lote.numero_lote}.' if descuento > 0 else f'Descuento removido del lote #{lote.numero_lote}.',
+            'lote': LoteInventarioSerializer(lote).data
+        }, status=status.HTTP_200_OK)
 
 class AjusteInventarioViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]

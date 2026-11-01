@@ -1,9 +1,6 @@
 version: '3.8'
 
 services:
-  # ==========================================
-  # Base de Datos: PostgreSQL 16
-  # ==========================================
   db:
     image: postgres:16-alpine
     container_name: nohemysys_postgres
@@ -24,9 +21,6 @@ services:
     networks:
       - nohemysys_net
 
-  # ==========================================
-  # Backend: Django 6 + DRF + Gunicorn
-  # ==========================================
   backend:
     build:
       context: ./backend
@@ -52,9 +46,6 @@ services:
     networks:
       - nohemysys_net
 
-  # ==========================================
-  # Frontend: React 18 + Vite + Nginx
-  # ==========================================
   frontend:
     build:
       context: ./frontend

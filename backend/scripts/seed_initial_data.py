@@ -2,7 +2,6 @@ import os
 import sys
 from pathlib import Path
 
-# Agregar backend y apps al path de Python
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
 sys.path.insert(0, str(BACKEND_DIR / 'apps'))
@@ -17,8 +16,7 @@ from apps.catalogos.models import Categoria, UnidadMedida, Marca
 
 def run():
     print("--- Inicializando datos esenciales para NohemySys ---")
-    
-    # 1. Roles del sistema
+
     admin_rol, _ = Rol.objects.get_or_create(
         codigo='ADMINISTRADOR',
         defaults={'nombre': 'Administrador General', 'descripcion': 'Acceso total al sistema', 'permisos': ['*']}
@@ -33,7 +31,6 @@ def run():
     )
     print("[OK] Roles del sistema verificados.")
 
-    # 2. Usuario Administrador Inicial
     username = os.environ.get('INIT_ADMIN_USER', 'admin')
     password = os.environ.get('INIT_ADMIN_PASS', 'Admin123*')
     email = os.environ.get('INIT_ADMIN_EMAIL', 'admin@nohemysys.com')
@@ -48,14 +45,12 @@ def run():
     user.save()
     print(f"[OK] Usuario Administrador '{username}' configurado correctamente.")
 
-    # 3. Cliente CF (Consumidor Final)
     cf, cf_created = Cliente.objects.get_or_create(
         nit='C/F',
         defaults={'nombre_completo': 'Consumidor Final', 'direccion': 'Ciudad'}
     )
     print("[OK] Cliente Consumidor Final (C/F) listo.")
 
-    # 4. Categorías base del negocio
     default_categorias = [
         ('Abarrotes en General', 'Aceites, sopas, salsas, condimentos y productos secos.'),
         ('Granos Básicos y Harinas', 'Frijol, arroz, azúcar, maíz y harinas diversas.'),
@@ -73,7 +68,6 @@ def run():
         )
     print(f"[OK] {len(default_categorias)} Categorías base verificadas.")
 
-    # 5. Unidades de medida base
     default_unidades = [
         ('Unidad', 'UND'),
         ('Libra', 'LB'),

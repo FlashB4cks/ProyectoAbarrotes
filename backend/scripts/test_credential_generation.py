@@ -6,7 +6,6 @@ django.setup()
 
 from apps.autenticacion.serializers import UserAdminSerializer
 
-# Test creating a new employee with first_name="Carlos", last_name="Gómez Pérez", dpi="1234567890123"
 data = {
     "first_name": "Carlos",
     "last_name": "Gómez Pérez",

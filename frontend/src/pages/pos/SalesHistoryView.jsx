@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { Toast } from '../../components/common';
+import { Toast, Pagination, usePagination } from '../../components/common';
 import { IconPrinter, IconRefresh } from '../../components/icons/Icons';
 
-/* ── COMPONENTE: HISTORIAL DE VENTAS Y FACTURAS ── */
 export const SalesHistoryView = ({ onReprintTicket }) => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -46,6 +45,19 @@ export const SalesHistoryView = ({ onReprintTicket }) => {
     }
     return result;
   }, [sales, searchTerm, statusFilter]);
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    paginatedItems: paginatedSales,
+    totalItems
+  } = usePagination(filteredSales, 10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, setCurrentPage]);
 
   const handleAnular = async () => {
     if (!confirmAnular) return;
@@ -113,7 +125,7 @@ export const SalesHistoryView = ({ onReprintTicket }) => {
               ) : filteredSales.length === 0 ? (
                 <tr><td colSpan="9" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No se encontraron ventas con los criterios seleccionados.</td></tr>
               ) : (
-                filteredSales.map((v) => {
+                paginatedSales.map((v) => {
                   const isAnulada = v.estado === 'ANULADA';
                   const fecha = v.fecha_venta ? new Date(v.fecha_venta).toLocaleString('es-GT', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A';
                   return (
@@ -161,7 +173,7 @@ export const SalesHistoryView = ({ onReprintTicket }) => {
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                           >
                             <IconPrinter size={13} />
-                            <span>Ticket</span>
+                            <span>Comprobante</span>
                           </button>
                           {!isAnulada && (
                             <button
@@ -182,9 +194,18 @@ export const SalesHistoryView = ({ onReprintTicket }) => {
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => { setPageSize(newSize); setCurrentPage(1); }}
+          pageSizeOptions={[10, 20, 50, 100]}
+          itemName="ventas registradas"
+        />
       </div>
 
-      {/* Modal de confirmación de anulación */}
       {confirmAnular && (
         <div className="modal-backdrop" onClick={(e) => { if (e.target.className.includes('modal-backdrop')) setConfirmAnular(null); }}>
           <div className="modal-container" style={{ maxWidth: '480px' }}>
@@ -226,6 +247,5 @@ export const SalesHistoryView = ({ onReprintTicket }) => {
     </div>
   );
 };
-
 
 export default SalesHistoryView;

@@ -1,44 +1,44 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
 import { playScannerBeep } from '../../utils/audio';
 import { Toast } from '../../components/common';
-import { CategorySilhouetteIcon, IconBarcode, IconCart, IconCash, IconCashRegister, IconEdit, IconReceipt, IconRefresh, IconSearch, IconSmartphone, IconTag, IconTrash } from '../../components/icons/Icons';
+import { CategorySilhouetteIcon, IconBarcode, IconCart, IconCash, IconCashRegister, IconEdit, IconLock, IconReceipt, IconRefresh, IconSearch, IconSmartphone, IconTag, IconTrash } from '../../components/icons/Icons';
 
 import ClientSelectModal from './ClientSelectModal';
+import ClientTypePromptModal from './ClientTypePromptModal';
 import CheckoutModal from './CheckoutModal';
 import InvoiceTicketModal from './InvoiceTicketModal';
 import SalesHistoryView from './SalesHistoryView';
-import CashControlPage from '../cash/CashControlPage';
 import OpenCashModal from '../cash/OpenCashModal';
-/* ── COMPONENTE ALIAS PARA RETROCOMPATIBILIDAD CON POS ── */
-export const SalesDailySummaryView = (props) => <CashControlPage isEmbedded={true} {...props} />;
 
-
-/* ── COMPONENTE: PÁGINA PRINCIPAL DE PUNTO DE VENTA (POS) ── */
 export const POSPage = ({ onOpenScanner }) => {
-  const [posTab, setPosTab] = useState('mostrador'); // 'mostrador' | 'historial' | 'resumen'
+  const [posTab, setPosTab] = useState('mostrador');
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
 
-  // Control de Turno de Caja (RF-05)
   const [cashStatus, setCashStatus] = useState(null);
   const [isOpenCashModalOpen, setIsOpenCashModalOpen] = useState(false);
 
-  // Estado del Carrito
   const [cart, setCart] = useState([]);
   const [client, setClient] = useState({ id_cliente: null, nombre_completo: 'Consumidor Final', nit: 'C/F' });
   const [discount, setDiscount] = useState(0);
 
-  // Modales
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [isClientPromptModalOpen, setIsClientPromptModalOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [completedSale, setCompletedSale] = useState(null);
   const [toast, setToast] = useState(null);
+  const cartHasPromptedRef = useRef(false);
 
-  // Consultar estado actual de caja
+  useEffect(() => {
+    if (cart.length === 0) {
+      cartHasPromptedRef.current = false;
+    }
+  }, [cart.length]);
+
   const fetchCashStatus = async () => {
     try {
       const data = await NohemyApi.getCajaActiva();
@@ -49,7 +49,6 @@ export const POSPage = ({ onOpenScanner }) => {
     }
   };
 
-  // Cargar catálogo de productos y categorías
   const loadCatalog = async () => {
     setLoading(true);
     try {
@@ -78,13 +77,20 @@ export const POSPage = ({ onOpenScanner }) => {
     }
   }, [posTab]);
 
-  // Agregar producto al carrito
   const addToCart = (product, qtyToAdd = 1) => {
     const stockDisp = parseInt(product.stock_total, 10) || 0;
     if (stockDisp <= 0) {
       playScannerBeep(false);
       setToast({ type: 'warning', message: `El producto "${product.nombre}" no tiene existencias disponibles en inventario.` });
       return;
+    }
+
+    if (cart.length === 0 && !cartHasPromptedRef.current) {
+      cartHasPromptedRef.current = true;
+      const isCustomNitClient = client && client.nit && client.nit !== 'C/F' && client.nombre_completo !== 'Consumidor Final';
+      if (!isCustomNitClient) {
+        setIsClientPromptModalOpen(true);
+      }
     }
 
     setCart(prevCart => {
@@ -99,10 +105,11 @@ export const POSPage = ({ onOpenScanner }) => {
         }
         playScannerBeep(true);
         const updated = [...prevCart];
-        const pUnit = parseFloat(product.precio_venta) || 0;
+        const pUnit = parseFloat(product.precio_con_descuento) || parseFloat(product.precio_venta) || 0;
         updated[existingIndex] = {
           ...item,
           cantidad: newQty,
+          precio_unitario: pUnit,
           subtotal: newQty * pUnit
         };
         return updated;
@@ -113,7 +120,7 @@ export const POSPage = ({ onOpenScanner }) => {
           return prevCart;
         }
         playScannerBeep(true);
-        const pUnit = parseFloat(product.precio_venta) || 0;
+        const pUnit = parseFloat(product.precio_con_descuento) || parseFloat(product.precio_venta) || 0;
         return [
           ...prevCart,
           {
@@ -127,7 +134,6 @@ export const POSPage = ({ onOpenScanner }) => {
     });
   };
 
-  // Modificar cantidad de un producto
   const updateCartQty = (productoId, newQty) => {
     if (newQty <= 0) {
       removeFromCart(productoId);
@@ -152,22 +158,38 @@ export const POSPage = ({ onOpenScanner }) => {
     });
   };
 
-  // Eliminar producto del carrito
   const removeFromCart = (productoId) => {
     setCart(prevCart => prevCart.filter(item => item.producto.id_producto !== productoId));
   };
 
-  // Vaciar carrito
   const clearCart = () => {
     setCart([]);
     setDiscount(0);
+    cartHasPromptedRef.current = false;
+    NohemyApi.getConsumidorFinal().then(cf => setClient(cf)).catch(() => {
+      setClient({ id_cliente: null, nombre_completo: 'Consumidor Final', nit: 'C/F' });
+    });
   };
 
-  // Manejador de cambio en el campo de búsqueda (detección automática de código de barras)
+  const handlePromptSelectCF = async () => {
+    try {
+      const cf = await NohemyApi.getConsumidorFinal();
+      setClient(cf);
+    } catch {
+      setClient({ id_cliente: null, nombre_completo: 'Consumidor Final', nit: 'C/F' });
+    }
+    setIsClientPromptModalOpen(false);
+    setToast({ type: 'info', message: 'Venta asignada a Consumidor Final.' });
+  };
+
+  const handlePromptSelectNIT = () => {
+    setIsClientPromptModalOpen(false);
+    setIsClientModalOpen(true);
+  };
+
   const handleSearchChange = (val) => {
     const trimmed = val.trim();
 
-    // Detección si se completó un código de barras exacto de catálogo (mínimo 6 caracteres)
     if (trimmed.length >= 6) {
       const exactMatch = products.find(
         p => p.codigo_barras && p.codigo_barras.trim().toLowerCase() === trimmed.toLowerCase()
@@ -179,7 +201,6 @@ export const POSPage = ({ onOpenScanner }) => {
         return;
       }
 
-      // Si por alguna razón se pegó o escaneó una cadena con códigos repetidos/concatenados
       for (const p of products) {
         const pCode = (p.codigo_barras || '').trim().toLowerCase();
         if (pCode && pCode.length >= 6 && trimmed.toLowerCase().includes(pCode)) {
@@ -197,7 +218,6 @@ export const POSPage = ({ onOpenScanner }) => {
     setSearchTerm(val);
   };
 
-  // Manejador de teclas en el buscador (Enter, Escape)
   const handleSearchKeyDown = (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -212,7 +232,6 @@ export const POSPage = ({ onOpenScanner }) => {
 
       const termLower = term.toLowerCase();
 
-      // 1. Coincidencia exacta por código de barras
       const byBarcode = products.find(
         p => p.codigo_barras && p.codigo_barras.trim().toLowerCase() === termLower
       );
@@ -223,7 +242,6 @@ export const POSPage = ({ onOpenScanner }) => {
         return;
       }
 
-      // 2. Si hay exactamente 1 producto visible en la lista filtrada
       if (filteredProducts.length === 1) {
         const single = filteredProducts[0];
         addToCart(single, 1);
@@ -232,30 +250,26 @@ export const POSPage = ({ onOpenScanner }) => {
         return;
       }
 
-      // 3. Si parece un código numérico (>= 4 dígitos) y no fue registrado
       if (/^\d{4,}$/.test(term)) {
         playScannerBeep(false);
         setToast({ type: 'warning', message: `Código de barras no registrado: ${term}` });
-        setSearchTerm(''); // Se limpia para que el siguiente escaneo no se concatene
+        setSearchTerm('');
         return;
       }
     }
   };
 
-  // Escuchar escáner de código de barras global
   useEffect(() => {
     const handleBarcode = (e) => {
       const code = e.detail?.code;
       if (!code || isCheckoutModalOpen || Boolean(completedSale)) return;
 
-      // Limpiar inmediatamente el buscador para que nunca se acumulen números
       setSearchTerm('');
 
       const cleanCode = String(code).trim().toLowerCase();
       let found = products.find(p => p.codigo_barras && p.codigo_barras.trim().toLowerCase() === cleanCode);
       let countToAdd = 1;
 
-      // Protección contra códigos concatenados si se leyeron varios juntos
       if (!found && cleanCode.length > 8) {
         for (const p of products) {
           const pCode = (p.codigo_barras || '').trim().toLowerCase();
@@ -283,7 +297,6 @@ export const POSPage = ({ onOpenScanner }) => {
     return () => window.removeEventListener('nohemysys:barcode', handleBarcode);
   }, [products, isCheckoutModalOpen, completedSale]);
 
-  // Atajos de teclado: F4 para Cobrar
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'F4') {
@@ -302,7 +315,6 @@ export const POSPage = ({ onOpenScanner }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [cart, isCheckoutModalOpen, cashStatus]);
 
-  // Cálculos totales
   const subtotal = useMemo(() => {
     return cart.reduce((acc, item) => acc + item.subtotal, 0);
   }, [cart]);
@@ -312,7 +324,6 @@ export const POSPage = ({ onOpenScanner }) => {
     return Math.max(0, subtotal - disc);
   }, [subtotal, discount]);
 
-  // Filtro de productos
   const filteredProducts = useMemo(() => {
     let result = [...products];
     if (selectedCategory !== 'ALL') {
@@ -330,7 +341,6 @@ export const POSPage = ({ onOpenScanner }) => {
     return result;
   }, [products, selectedCategory, searchTerm]);
 
-  // Finalizar venta con éxito
   const handleSaleSuccess = (saleResult) => {
     setIsCheckoutModalOpen(false);
     clearCart();
@@ -341,7 +351,7 @@ export const POSPage = ({ onOpenScanner }) => {
 
   return (
     <div className="pos-wrapper">
-      {/* Barra superior de control y pestañas del POS */}
+
       <div className="pos-control-bar">
         <div className="pos-control-tabs">
           <button
@@ -351,7 +361,7 @@ export const POSPage = ({ onOpenScanner }) => {
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <IconCart size={16} />
-              <span>Mostrador POS</span>
+              <span>Mostrador de Ventas</span>
             </span>
             {cart.length > 0 && (
               <span className="pos-cart-badge" style={{ background: '#ffffff', color: '#b8860b' }}>
@@ -369,53 +379,49 @@ export const POSPage = ({ onOpenScanner }) => {
               <span>Historial de Ventas</span>
             </span>
           </button>
-          <button
-            type="button"
-            className={`pos-tab-btn ${posTab === 'resumen' ? 'active' : ''}`}
-            onClick={() => setPosTab('resumen')}
-          >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <IconCashRegister size={16} />
-              <span>Control de Caja y Turnos</span>
-            </span>
-            {cashStatus && (
-              <span style={{
-                fontSize: '10.5px',
-                padding: '2px 7px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                background: cashStatus.abierta ? '#dcfce7' : '#fee2e2',
-                color: cashStatus.abierta ? '#15803d' : '#b91c1c'
-              }}>
-                {cashStatus.abierta ? 'Abierta' : 'Cerrada'}
-              </span>
-            )}
-          </button>
         </div>
 
         <div className="pos-control-actions">
-          {cashStatus && !cashStatus.abierta && (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => setIsOpenCashModalOpen(true)}
-              style={{ fontSize: '12px', padding: '6px 12px', background: '#b8860b', borderColor: '#b8860b', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}
-              title="Iniciar turno de caja para habilitar ventas"
+          {cashStatus && (
+            <span
+              style={{
+                fontSize: '11.5px',
+                padding: '4px 9px',
+                borderRadius: '8px',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: cashStatus.abierta ? 'rgba(22, 163, 74, 0.1)' : 'rgba(220, 38, 38, 0.1)',
+                color: cashStatus.abierta ? '#15803d' : '#b91c1c',
+                border: `1px solid ${cashStatus.abierta ? 'rgba(22, 163, 74, 0.3)' : 'rgba(220, 38, 38, 0.3)'}`
+              }}
+              title={cashStatus.abierta ? 'Turno de caja abierto y listo para facturar' : 'Caja cerrada. Debe aperturar turno para cobrar.'}
             >
-              <IconCashRegister size={14} />
-              <span>+ Abrir Turno de Caja</span>
-            </button>
+              <IconCashRegister size={13} />
+              <span>Caja {cashStatus.abierta ? 'Abierta' : 'Cerrada'}</span>
+            </span>
           )}
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={onOpenScanner}
-            style={{ fontSize: '12.5px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+          <div
+            style={{
+              fontSize: '12.5px',
+              padding: '6px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'var(--input-bg)',
+              border: '1px solid var(--card-border)',
+              borderRadius: 'var(--radius)',
+              color: 'var(--text-main)',
+              cursor: 'default',
+              userSelect: 'none'
+            }}
+            title="Lector móvil habilitado"
           >
             <span className="scanner-indicator-dot" style={{ position: 'static', display: 'inline-block' }}></span>
             <IconSmartphone size={15} />
-            <span>Escáner Celular / USB</span>
-          </button>
+            <span>Lector / Teléfono Móvil</span>
+          </div>
           <button
             type="button"
             className="btn btn-secondary"
@@ -429,10 +435,9 @@ export const POSPage = ({ onOpenScanner }) => {
         </div>
       </div>
 
-      {/* PESTAÑA 1: MOSTRADOR DE VENTA */}
       {posTab === 'mostrador' && (
         <div className="pos-main-grid">
-          {/* Panel Izquierdo: Catálogo y Búsqueda */}
+
           <div className="pos-catalog-panel">
             <div className="pos-search-header">
               <div className="pos-search-box">
@@ -442,7 +447,7 @@ export const POSPage = ({ onOpenScanner }) => {
                 <input
                   type="text"
                   className="pos-search-input"
-                  placeholder="Buscar producto por nombre o código (o escanea directamente)..."
+                  placeholder="Buscar producto por nombre o código o escanea directamente..."
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
@@ -452,7 +457,7 @@ export const POSPage = ({ onOpenScanner }) => {
                     type="button"
                     className="pos-search-clear"
                     onClick={() => setSearchTerm('')}
-                    title="Limpiar búsqueda (Esc)"
+                    title="Limpiar búsqueda"
                   >
                     ✕
                   </button>
@@ -463,7 +468,6 @@ export const POSPage = ({ onOpenScanner }) => {
                 </span>
               </div>
 
-              {/* Categorías Pills con Iconos Silueta Dinámicos */}
               <div className="pos-categories-bar">
                 <button
                   type="button"
@@ -490,51 +494,7 @@ export const POSPage = ({ onOpenScanner }) => {
               </div>
             </div>
 
-            {/* Cuadrícula de Productos */}
             <div className="pos-products-scroll">
-              {cashStatus && !cashStatus.abierta && (
-                <div style={{
-                  background: 'linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%)',
-                  border: '1px solid #fed7aa',
-                  borderRadius: '12px',
-                  padding: '14px 18px',
-                  marginBottom: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                  flexWrap: 'wrap',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '38px', height: '38px', borderRadius: '10px',
-                      background: 'rgba(239, 68, 68, 0.12)', color: '#dc2626',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <IconCashRegister size={20} />
-                    </div>
-                    <div>
-                      <strong style={{ fontSize: '13.5px', color: '#9a3412', display: 'block' }}>
-                        Turno de Caja Inactivo / Caja Cerrada
-                      </strong>
-                      <span style={{ fontSize: '12px', color: '#c2410c' }}>
-                        No se pueden emitir facturas ni cobrar ventas hasta realizar la apertura de turno en Control de Caja.
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    style={{ background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff', fontSize: '12px', padding: '6px 14px', fontWeight: 700, borderRadius: '8px' }}
-                    onClick={() => setIsOpenCashModalOpen(true)}
-                  >
-                    + Abrir Turno de Caja
-                  </button>
-                </div>
-              )}
-
               {loading && products.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
                   Cargando productos del almacén...
@@ -550,6 +510,8 @@ export const POSPage = ({ onOpenScanner }) => {
                     const isOutOfStock = stock <= 0;
                     const isLowStock = !isOutOfStock && stock <= (p.stock_minimo || 5);
                     const pPrice = parseFloat(p.precio_venta) || 0;
+                    const pDiscount = parseFloat(p.descuento_lote) || 0;
+                    const pFinalPrice = parseFloat(p.precio_con_descuento) || pPrice;
 
                     return (
                       <div
@@ -562,12 +524,28 @@ export const POSPage = ({ onOpenScanner }) => {
                           <div className="pos-card-icon-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <CategorySilhouetteIcon name={p.categoria_nombre} size={22} />
                           </div>
-                          <span
-                            className={`stock-badge ${isOutOfStock ? 'stock-danger' : (isLowStock ? 'stock-warning' : 'stock-success')}`}
-                            style={{ fontSize: '11px', padding: '2px 8px' }}
-                          >
-                            {isOutOfStock ? '○ Agotado (0)' : `● ${stock} ${p.unidad_simbolo || 'ud'}`}
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
+                            <span
+                              className={`stock-badge ${isOutOfStock ? 'stock-danger' : (isLowStock ? 'stock-warning' : 'stock-success')}`}
+                              style={{ fontSize: '11px', padding: '2px 8px' }}
+                            >
+                              {isOutOfStock ? '○ Agotado' : `● ${stock} ${p.unidad_simbolo || 'ud'}`}
+                            </span>
+                            {pDiscount > 0 && !isOutOfStock && (
+                              <span
+                                style={{
+                                  fontSize: '10px',
+                                  background: 'rgba(184, 134, 11, 0.18)',
+                                  color: 'var(--accent)',
+                                  padding: '1px 6px',
+                                  borderRadius: '6px',
+                                  fontWeight: 800
+                                }}
+                              >
+                                -{pDiscount}% Lote
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         <div>
@@ -582,7 +560,22 @@ export const POSPage = ({ onOpenScanner }) => {
                         </div>
 
                         <div className="pos-card-bottom">
-                          <div className="pos-card-price">Q {pPrice.toFixed(2)}</div>
+                          <div className="pos-card-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                            {pDiscount > 0 ? (
+                              <>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                                  <span style={{ fontSize: '14.5px', fontWeight: 900, color: 'var(--accent)' }}>
+                                    Q {pFinalPrice.toFixed(2)}
+                                  </span>
+                                  <span style={{ fontSize: '11px', textDecoration: 'line-through', color: 'var(--text-muted)' }}>
+                                    Q {pPrice.toFixed(2)}
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <div>Q {pPrice.toFixed(2)}</div>
+                            )}
+                          </div>
                           {!isOutOfStock && (
                             <span className="pos-card-add-btn">
                               + Agregar
@@ -597,7 +590,6 @@ export const POSPage = ({ onOpenScanner }) => {
             </div>
           </div>
 
-          {/* Panel Derecho: Carrito de Venta y Facturación */}
           <div className="pos-cart-panel">
             <div className="pos-cart-header">
               <div className="pos-cart-header-top">
@@ -606,7 +598,7 @@ export const POSPage = ({ onOpenScanner }) => {
                     <IconCart size={16} />
                     <span>Mostrador</span>
                   </span>
-                  <span className="pos-cart-badge">{cart.reduce((a, b) => a + b.cantidad, 0)} items</span>
+                  <span className="pos-cart-badge">{cart.reduce((a, b) => a + b.cantidad, 0)} {cart.reduce((a, b) => a + b.cantidad, 0) === 1 ? 'artículo' : 'artículos'}</span>
                 </h3>
                 {cart.length > 0 && (
                   <button
@@ -622,7 +614,6 @@ export const POSPage = ({ onOpenScanner }) => {
                 )}
               </div>
 
-              {/* Tarjeta de Cliente */}
               <div className="pos-customer-chip">
                 <div className="pos-customer-info">
                   <span style={{ color: 'var(--text-muted)', fontSize: '10.5px', textTransform: 'uppercase', fontWeight: 700 }}>
@@ -635,20 +626,32 @@ export const POSPage = ({ onOpenScanner }) => {
                     NIT: {client?.nit || 'C/F'}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  style={{ fontSize: '11.5px', padding: '4px 8px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  onClick={() => setIsClientModalOpen(true)}
-                  title="Cambiar o crear cliente"
-                >
-                  <IconEdit size={12} />
-                  <span>Cambiar</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {client?.nit && client.nit !== 'C/F' && client.nombre_completo !== 'Consumidor Final' && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ fontSize: '11px', padding: '4px 8px' }}
+                      onClick={handlePromptSelectCF}
+                      title="Cambiar rápidamente a Consumidor Final"
+                    >
+                      Usar CF
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ fontSize: '11.5px', padding: '4px 8px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    onClick={() => setIsClientModalOpen(true)}
+                    title="Cambiar o crear cliente"
+                  >
+                    <IconEdit size={12} />
+                    <span>Cambiar</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Listado de Productos en el Carrito */}
             <div className="pos-cart-items-list">
               {cart.length === 0 ? (
                 <div className="pos-cart-empty">
@@ -671,9 +674,16 @@ export const POSPage = ({ onOpenScanner }) => {
                     </div>
 
                     <div className="pos-cart-item-row">
-                      <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                        Q {item.precio_unitario.toFixed(2)} c/u
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                          Q {item.precio_unitario.toFixed(2)} c/u
+                        </span>
+                        {item.producto.descuento_lote > 0 && (
+                          <span style={{ fontSize: '10px', background: 'rgba(184, 134, 11, 0.15)', color: 'var(--accent)', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                            -{item.producto.descuento_lote}% lote
+                          </span>
+                        )}
+                      </div>
 
                       <div className="pos-qty-controls">
                         <button
@@ -717,14 +727,13 @@ export const POSPage = ({ onOpenScanner }) => {
               )}
             </div>
 
-            {/* Resumen del Carrito y Botón de Cobro */}
             <div className="pos-cart-summary">
               <div className="pos-summary-row">
                 <span>Subtotal:</span>
                 <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Q {subtotal.toFixed(2)}</span>
               </div>
               <div className="pos-summary-row">
-                <span>Descuento (Q):</span>
+                <span>Descuento en Quetzales:</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Q</span>
                   <input
@@ -752,7 +761,6 @@ export const POSPage = ({ onOpenScanner }) => {
                 <span className="pos-total-amount">Q {total.toFixed(2)}</span>
               </div>
 
-              {/* Alerta si la caja está cerrada */}
               {cashStatus && !cashStatus.abierta && (
                 <div style={{
                   background: '#fef2f2',
@@ -766,7 +774,9 @@ export const POSPage = ({ onOpenScanner }) => {
                   fontSize: '11.5px',
                   color: '#991b1b'
                 }}>
-                  <span style={{ fontSize: '15px' }}>🔒</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', color: '#991b1b', flexShrink: 0 }}>
+                    <IconLock size={16} />
+                  </span>
                   <div style={{ flex: 1, lineHeight: '1.3' }}>
                     <strong>Caja Cerrada:</strong> Requiere turno abierto para cobrar.
                   </div>
@@ -794,11 +804,11 @@ export const POSPage = ({ onOpenScanner }) => {
                   setIsCheckoutModalOpen(true);
                 }}
                 style={cashStatus && !cashStatus.abierta ? { opacity: 0.6, cursor: 'not-allowed', filter: 'grayscale(0.4)' } : {}}
-                title={cashStatus && !cashStatus.abierta ? 'Turno de caja cerrado. Abra la caja para habilitar el cobro.' : 'Cobrar (F4)'}
+                title={cashStatus && !cashStatus.abierta ? 'Turno de caja cerrado. Abra la caja para habilitar el cobro.' : 'Cobrar F4'}
               >
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                   <IconCash size={18} />
-                  <span>Cobrar (F4)</span>
+                  <span>Cobrar F4</span>
                 </span>
               </button>
             </div>
@@ -806,17 +816,17 @@ export const POSPage = ({ onOpenScanner }) => {
         </div>
       )}
 
-      {/* PESTAÑA 2: HISTORIAL DE VENTAS */}
       {posTab === 'historial' && (
         <SalesHistoryView onReprintTicket={(venta) => setCompletedSale(venta)} />
       )}
 
-      {/* PESTAÑA 3: RESUMEN DE CAJA DEL DÍA */}
-      {posTab === 'resumen' && (
-        <SalesDailySummaryView />
-      )}
+      <ClientTypePromptModal
+        isOpen={isClientPromptModalOpen}
+        onClose={() => setIsClientPromptModalOpen(false)}
+        onSelectCF={handlePromptSelectCF}
+        onSelectNIT={handlePromptSelectNIT}
+      />
 
-      {/* Modal para Selección / Alta de Clientes */}
       <ClientSelectModal
         isOpen={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}
@@ -824,7 +834,6 @@ export const POSPage = ({ onOpenScanner }) => {
         selectedClient={client}
       />
 
-      {/* Modal para Procesar el Pago */}
       <CheckoutModal
         isOpen={isCheckoutModalOpen}
         onClose={() => setIsCheckoutModalOpen(false)}
@@ -833,17 +842,19 @@ export const POSPage = ({ onOpenScanner }) => {
         discount={discount}
         total={total}
         client={client}
+        onChangeClient={() => {
+          setIsCheckoutModalOpen(false);
+          setIsClientModalOpen(true);
+        }}
         onSuccessSale={handleSaleSuccess}
       />
 
-      {/* Modal para Imprimir Comprobante Térmico */}
       <InvoiceTicketModal
         isOpen={Boolean(completedSale)}
         onClose={() => setCompletedSale(null)}
         saleData={completedSale}
       />
 
-      {/* Modal para Apertura Rápida de Caja */}
       <OpenCashModal
         isOpen={isOpenCashModalOpen}
         onClose={() => setIsOpenCashModalOpen(false)}
@@ -857,6 +868,5 @@ export const POSPage = ({ onOpenScanner }) => {
     </div>
   );
 };
-
 
 export default POSPage;

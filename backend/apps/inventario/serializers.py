@@ -14,6 +14,9 @@ class LoteInventarioSerializer(serializers.ModelSerializer):
     estado_vencimiento = serializers.SerializerMethodField()
     correlativo_lote = serializers.SerializerMethodField()
     valor_lote = serializers.SerializerMethodField()
+    precio_venta_regular = serializers.ReadOnlyField()
+    precio_venta_descuento = serializers.ReadOnlyField()
+    tiene_descuento = serializers.SerializerMethodField()
 
     class Meta:
         model = LoteInventario
@@ -37,6 +40,11 @@ class LoteInventarioSerializer(serializers.ModelSerializer):
             'cantidad_inicial',
             'cantidad_actual',
             'costo_unitario',
+            'descuento_porcentaje',
+            'motivo_descuento',
+            'precio_venta_regular',
+            'precio_venta_descuento',
+            'tiene_descuento',
             'valor_lote',
             'is_active'
         ]
@@ -66,6 +74,8 @@ class LoteInventarioSerializer(serializers.ModelSerializer):
     def get_valor_lote(self, obj):
         return float(obj.cantidad_actual * obj.costo_unitario)
 
+    def get_tiene_descuento(self, obj):
+        return bool(obj.descuento_porcentaje and obj.descuento_porcentaje > 0)
 
 class AjusteInventarioSerializer(serializers.ModelSerializer):
     numero_lote = serializers.ReadOnlyField(source='lote.numero_lote')
