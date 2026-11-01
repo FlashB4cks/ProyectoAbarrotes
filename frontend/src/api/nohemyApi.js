@@ -41,6 +41,8 @@ class NohemyApi {
     localStorage.removeItem(STORAGE_KEYS.USER_DATA);
   }
 
+  static refreshPromise = null;
+
   static async request(endpoint, options = {}) {
     const url = `${this.getBaseUrl()}${endpoint}`;
     const headers = {
@@ -55,7 +57,9 @@ class NohemyApi {
 
     let response = await fetch(url, { ...options, headers });
 
-    if (response.status === 401 && this.getRefreshToken() && !options._retry) {
+    const isAuthEndpoint = endpoint.includes('/autenticacion/');
+
+    if (response.status === 401 && !isAuthEndpoint && this.getRefreshToken() && !options._retry) {
       options._retry = true;
       const refreshed = await this.refreshToken();
       if (refreshed) {
@@ -86,23 +90,33 @@ class NohemyApi {
   }
 
   static async refreshToken() {
-    try {
-      const refresh = this.getRefreshToken();
-      if (!refresh) return false;
-      const res = await fetch(`${this.getBaseUrl()}/autenticacion/refresh/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        this.setTokens(data.access, data.refresh);
-        return true;
-      }
-    } catch (e) {
-      console.error('Refresh token failed:', e);
+    if (this.refreshPromise) {
+      return this.refreshPromise;
     }
-    return false;
+
+    this.refreshPromise = (async () => {
+      try {
+        const refresh = this.getRefreshToken();
+        if (!refresh) return false;
+        const res = await fetch(`${this.getBaseUrl()}/autenticacion/refresh/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.setTokens(data.access, data.refresh || refresh);
+          return true;
+        }
+      } catch (e) {
+        console.error('Refresh token failed:', e);
+      } finally {
+        this.refreshPromise = null;
+      }
+      return false;
+    })();
+
+    return this.refreshPromise;
   }
 
   static async login(usernameOrEmail, password) {

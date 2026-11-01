@@ -132,8 +132,7 @@ export const MainLayout = () => {
       try {
         const res = await NohemyApi.recibirCodigoEscaner(scannerSession.session_id, sinceId);
         if (res.status === 'not_found') {
-
-          initScannerSession();
+          setScannerConnected(false);
         } else if (res.status === 'success') {
           if (res.conectado !== undefined) {
             setScannerConnected(res.conectado);
@@ -147,10 +146,10 @@ export const MainLayout = () => {
       } catch {
 
       }
-    }, 800);
+    }, 2500);
 
     return () => clearInterval(interval);
-  }, [scannerSession]);
+  }, [scannerSession?.session_id]);
 
   if (loading) {
     return (

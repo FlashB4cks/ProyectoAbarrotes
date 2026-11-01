@@ -185,7 +185,7 @@ class EscanerRecibirView(APIView):
     """
     Endpoint consultado por la computadora para recibir códigos transmitidos desde el teléfono.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request):
         session_id = request.query_params.get('session_id')
