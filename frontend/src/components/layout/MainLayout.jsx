@@ -23,6 +23,7 @@ export const MainLayout = () => {
   const { user, loading, updateUserState } = useAuth();
   const [activeTab, setActiveTab] = useState('pos');
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
   const [scannerSession, setScannerSession] = useState(() => {
@@ -170,12 +171,20 @@ export const MainLayout = () => {
 
   return (
     <div className="app-container">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} collapsed={collapsed} setCollapsed={setCollapsed} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        mobileOpen={mobileMenuOpen}
+        setMobileOpen={setMobileMenuOpen}
+      />
       <div className="main-content">
         <Header
           activeTab={activeTab}
           onOpenScanner={() => setIsScannerModalOpen(true)}
           isScannerConnected={scannerConnected}
+          onToggleMobileMenu={() => setMobileMenuOpen(prev => !prev)}
         />
         {activeTab === 'pos' && (
           <POSPage onOpenScanner={() => setIsScannerModalOpen(true)} />

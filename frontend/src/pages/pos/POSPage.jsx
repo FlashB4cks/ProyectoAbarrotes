@@ -13,6 +13,7 @@ import OpenCashModal from '../cash/OpenCashModal';
 
 export const POSPage = ({ onOpenScanner }) => {
   const [posTab, setPosTab] = useState('mostrador');
+  const [mobilePosView, setMobilePosView] = useState('catalog');
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -344,6 +345,7 @@ export const POSPage = ({ onOpenScanner }) => {
   const handleSaleSuccess = (saleResult) => {
     setIsCheckoutModalOpen(false);
     clearCart();
+    setMobilePosView('catalog');
     const actualSale = saleResult?.venta || saleResult;
     setCompletedSale(actualSale);
     loadCatalog();
@@ -436,9 +438,29 @@ export const POSPage = ({ onOpenScanner }) => {
       </div>
 
       {posTab === 'mostrador' && (
-        <div className="pos-main-grid">
+        <>
+          <div className="pos-mobile-view-toggle">
+            <button
+              type="button"
+              className={`pos-mobile-toggle-btn ${mobilePosView === 'catalog' ? 'active' : ''}`}
+              onClick={() => setMobilePosView('catalog')}
+            >
+              <IconTag size={15} />
+              <span>Catálogo ({filteredProducts.length})</span>
+            </button>
+            <button
+              type="button"
+              className={`pos-mobile-toggle-btn ${mobilePosView === 'cart' ? 'active' : ''}`}
+              onClick={() => setMobilePosView('cart')}
+            >
+              <IconCart size={15} />
+              <span>Carrito ({cart.reduce((a, b) => a + b.cantidad, 0)})</span>
+              <strong style={{ marginLeft: '4px' }}>Q {total.toFixed(2)}</strong>
+            </button>
+          </div>
 
-          <div className="pos-catalog-panel">
+          <div className="pos-main-grid">
+            <div className={`pos-catalog-panel ${mobilePosView === 'cart' ? 'mobile-hidden' : ''}`}>
             <div className="pos-search-header">
               <div className="pos-search-box">
                 <span className="pos-search-icon" style={{ display: 'flex', alignItems: 'center' }}>
@@ -590,7 +612,7 @@ export const POSPage = ({ onOpenScanner }) => {
             </div>
           </div>
 
-          <div className="pos-cart-panel">
+          <div className={`pos-cart-panel ${mobilePosView === 'catalog' ? 'mobile-hidden' : ''}`}>
             <div className="pos-cart-header">
               <div className="pos-cart-header-top">
                 <h3 className="pos-cart-title">
@@ -600,18 +622,28 @@ export const POSPage = ({ onOpenScanner }) => {
                   </span>
                   <span className="pos-cart-badge">{cart.reduce((a, b) => a + b.cantidad, 0)} {cart.reduce((a, b) => a + b.cantidad, 0) === 1 ? 'artículo' : 'artículos'}</span>
                 </h3>
-                {cart.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    style={{ fontSize: '11px', padding: '3px 8px', color: '#ef4444', borderColor: '#fca5a5', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    onClick={clearCart}
-                    title="Vaciar carrito"
+                    className="btn btn-secondary pos-mobile-back-btn"
+                    onClick={() => setMobilePosView('catalog')}
+                    title="Volver al catálogo"
                   >
-                    <IconTrash size={12} />
-                    <span>Vaciar</span>
+                    ❮ Catálogo
                   </button>
-                )}
+                  {cart.length > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ fontSize: '11px', padding: '3px 8px', color: '#ef4444', borderColor: '#fca5a5', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      onClick={clearCart}
+                      title="Vaciar carrito"
+                    >
+                      <IconTrash size={12} />
+                      <span>Vaciar</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="pos-customer-chip">
@@ -814,6 +846,19 @@ export const POSPage = ({ onOpenScanner }) => {
             </div>
           </div>
         </div>
+
+        {mobilePosView === 'catalog' && cart.length > 0 && (
+          <div className="pos-mobile-floating-bar" onClick={() => setMobilePosView('cart')}>
+            <div className="pos-mobile-floating-info">
+              <span className="pos-mobile-floating-badge">{cart.reduce((a, b) => a + b.cantidad, 0)}</span>
+              <span>Total: <strong>Q {total.toFixed(2)}</strong></span>
+            </div>
+            <span className="pos-mobile-floating-btn">
+              Ver Carrito / Cobrar ❯
+            </span>
+          </div>
+        )}
+        </>
       )}
 
       {posTab === 'historial' && (
