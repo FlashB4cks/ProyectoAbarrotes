@@ -27,7 +27,7 @@ export const MainLayout = () => {
   const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
   const [scannerSession, setScannerSession] = useState(() => {
     try {
-      const saved = localStorage.getItem('nohemysys_scanner_session');
+      const saved = sessionStorage.getItem('nohemysys_scanner_session');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -40,7 +40,7 @@ export const MainLayout = () => {
     try {
       const ses = await NohemyApi.createEscanerSesion();
       setScannerSession(ses);
-      localStorage.setItem('nohemysys_scanner_session', JSON.stringify(ses));
+      sessionStorage.setItem('nohemysys_scanner_session', JSON.stringify(ses));
     } catch {
 
     }
@@ -240,7 +240,7 @@ export const MainLayout = () => {
         user={user}
         onSuccess={() => {
           const updatedUser = { ...user, debe_cambiar_password: false };
-          localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
+          sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUser));
           updateUserState(updatedUser);
         }}
       />

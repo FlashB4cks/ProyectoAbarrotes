@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+    const savedUser = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
     const token = NohemyApi.getAccessToken();
     if (savedUser && token) {
       try {
@@ -16,6 +16,12 @@ export const AuthProvider = ({ children }) => {
       } catch (e) {
         NohemyApi.clearTokens();
       }
+    } else {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+      } catch {}
     }
     setLoading(false);
   }, []);

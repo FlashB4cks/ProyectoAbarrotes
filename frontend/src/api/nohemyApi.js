@@ -23,22 +23,27 @@ class NohemyApi {
   }
 
   static getAccessToken() {
-    return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    return sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
   }
 
   static getRefreshToken() {
-    return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    return sessionStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
   }
 
   static setTokens(access, refresh) {
-    if (access) localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access);
-    if (refresh) localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh);
+    if (access) sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access);
+    if (refresh) sessionStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh);
   }
 
   static clearTokens() {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    } catch {}
   }
 
   static refreshPromise = null;
@@ -125,7 +130,7 @@ class NohemyApi {
       body: JSON.stringify({ username: usernameOrEmail, password }),
     });
     this.setTokens(data.access, data.refresh);
-    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
+    sessionStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
     return data.user;
   }
 
