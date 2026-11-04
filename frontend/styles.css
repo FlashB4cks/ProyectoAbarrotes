@@ -1159,6 +1159,22 @@ body {
   border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
+.badge-scanner-status,
+.btn-scanner-pill.active {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #059669;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: default;
+  user-select: none;
+}
+
 .btn-scanner-pill {
   display: inline-flex;
   align-items: center;
@@ -1179,12 +1195,6 @@ body {
   border-color: var(--accent);
   color: var(--accent);
   box-shadow: 0 2px 8px rgba(184, 134, 11, 0.12);
-}
-
-.btn-scanner-pill.active {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.35);
-  color: #059669;
 }
 
 .scanner-indicator-dot {
@@ -3100,6 +3110,7 @@ body {
     display: none;
   }
 
+  .badge-scanner-status,
   .btn-scanner-pill {
     padding: 7px 10px;
     font-size: 11px;

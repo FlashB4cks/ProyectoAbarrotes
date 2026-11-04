@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
 import { playScannerBeep } from '../../utils/audio';
 import { Toast } from '../../components/common';
-import { CategorySilhouetteIcon, IconBarcode, IconCart, IconCash, IconCashRegister, IconEdit, IconLock, IconReceipt, IconRefresh, IconSearch, IconSmartphone, IconTag, IconTrash } from '../../components/icons/Icons';
+import { CategorySilhouetteIcon, IconBarcode, IconCart, IconCash, IconCashRegister, IconEdit, IconLock, IconReceipt, IconRefresh, IconSearch, IconTag, IconTrash } from '../../components/icons/Icons';
 
 import ClientSelectModal from './ClientSelectModal';
 import ClientTypePromptModal from './ClientTypePromptModal';
@@ -404,26 +404,6 @@ export const POSPage = ({ onOpenScanner }) => {
               <span>Caja {cashStatus.abierta ? 'Abierta' : 'Cerrada'}</span>
             </span>
           )}
-          <div
-            style={{
-              fontSize: '12.5px',
-              padding: '6px 14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'var(--input-bg)',
-              border: '1px solid var(--card-border)',
-              borderRadius: 'var(--radius)',
-              color: 'var(--text-main)',
-              cursor: 'default',
-              userSelect: 'none'
-            }}
-            title="Lector móvil habilitado"
-          >
-            <span className="scanner-indicator-dot" style={{ position: 'static', display: 'inline-block' }}></span>
-            <IconSmartphone size={15} />
-            <span>Lector / Teléfono Móvil</span>
-          </div>
           <button
             type="button"
             className="btn btn-secondary"

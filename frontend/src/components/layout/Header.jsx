@@ -34,16 +34,14 @@ export const Header = ({ activeTab, onOpenScanner, isScannerConnected, onToggleM
         </div>
       </div>
       <div className="header-right-group">
-        <button
-          type="button"
-          className="btn-scanner-pill active"
-          onClick={onOpenScanner}
-          title="Configuración y prueba de lector de códigos de barras"
+        <div
+          className="badge-scanner-status"
+          title="Lector de código de barras USB conectado y listo para escanear"
         >
           <span className="scanner-indicator-dot"></span>
           <IconBarcode size={16} />
-          <span className="scanner-pill-text">Lector / Pistola USB</span>
-        </button>
+          <span className="scanner-pill-text">Lector USB Conectado</span>
+        </div>
       </div>
     </header>
   );
