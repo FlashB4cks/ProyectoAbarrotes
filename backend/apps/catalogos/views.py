@@ -26,12 +26,39 @@ class MarcaViewSet(viewsets.ModelViewSet):
             qs = qs.filter(nombre__icontains=search.strip())
         return qs
 
+    def perform_create(self, serializer):
+        marca = serializer.save()
+        registrar_auditoria(
+            usuario=self.request.user,
+            accion="CREAR",
+            tabla_afectada="marcas",
+            descripcion=f'Registro de nueva marca: "{marca.nombre}".',
+            request=self.request
+        )
+
+    def perform_update(self, serializer):
+        marca = serializer.save()
+        registrar_auditoria(
+            usuario=self.request.user,
+            accion="EDITAR",
+            tabla_afectada="marcas",
+            descripcion=f'Actualización de la marca: "{marca.nombre}".',
+            request=self.request
+        )
+
     @action(detail=True, methods=['post'], url_path='toggle-status')
     def toggle_status(self, request, pk=None):
         marca = self.get_object()
         marca.is_active = not marca.is_active
         marca.save()
         estado_str = "activada" if marca.is_active else "dada de baja"
+        registrar_auditoria(
+            usuario=request.user,
+            accion="EDITAR" if marca.is_active else "ELIMINAR",
+            tabla_afectada="marcas",
+            descripcion=f'Marca "{marca.nombre}" {estado_str} (Soft Delete).',
+            request=request
+        )
         return Response({
             'status': 'success',
             'message': f'Marca "{marca.nombre}" {estado_str} exitosamente.',
@@ -50,12 +77,39 @@ class CategoriaViewSet(viewsets.ModelViewSet):
             qs = qs.filter(nombre__icontains=search.strip())
         return qs
 
+    def perform_create(self, serializer):
+        categoria = serializer.save()
+        registrar_auditoria(
+            usuario=self.request.user,
+            accion="CREAR",
+            tabla_afectada="categorias",
+            descripcion=f'Registro de nueva categoría: "{categoria.nombre}".',
+            request=self.request
+        )
+
+    def perform_update(self, serializer):
+        categoria = serializer.save()
+        registrar_auditoria(
+            usuario=self.request.user,
+            accion="EDITAR",
+            tabla_afectada="categorias",
+            descripcion=f'Actualización de categoría: "{categoria.nombre}".',
+            request=self.request
+        )
+
     @action(detail=True, methods=['post'], url_path='toggle-status')
     def toggle_status(self, request, pk=None):
         categoria = self.get_object()
         categoria.is_active = not categoria.is_active
         categoria.save()
         estado_str = "activada" if categoria.is_active else "dada de baja"
+        registrar_auditoria(
+            usuario=request.user,
+            accion="EDITAR" if categoria.is_active else "ELIMINAR",
+            tabla_afectada="categorias",
+            descripcion=f'Categoría "{categoria.nombre}" {estado_str} (Soft Delete).',
+            request=request
+        )
         return Response({
             'status': 'success',
             'message': f'Categoría "{categoria.nombre}" {estado_str} exitosamente.',
@@ -67,12 +121,39 @@ class UnidadMedidaViewSet(viewsets.ModelViewSet):
     serializer_class = UnidadMedidaSerializer
     permission_classes = [IsAdminOrAlmaceneroOrReadOnly]
 
+    def perform_create(self, serializer):
+        unidad = serializer.save()
+        registrar_auditoria(
+            usuario=self.request.user,
+            accion="CREAR",
+            tabla_afectada="unidades_medida",
+            descripcion=f'Registro de unidad de medida: "{unidad.nombre}" ({unidad.abreviatura}).',
+            request=self.request
+        )
+
+    def perform_update(self, serializer):
+        unidad = serializer.save()
+        registrar_auditoria(
+            usuario=self.request.user,
+            accion="EDITAR",
+            tabla_afectada="unidades_medida",
+            descripcion=f'Actualización de unidad de medida: "{unidad.nombre}" ({unidad.abreviatura}).',
+            request=self.request
+        )
+
     @action(detail=True, methods=['post'], url_path='toggle-status')
     def toggle_status(self, request, pk=None):
         unidad = self.get_object()
         unidad.is_active = not unidad.is_active
         unidad.save()
         estado_str = "activada" if unidad.is_active else "dada de baja"
+        registrar_auditoria(
+            usuario=request.user,
+            accion="EDITAR" if unidad.is_active else "ELIMINAR",
+            tabla_afectada="unidades_medida",
+            descripcion=f'Unidad de medida "{unidad.nombre}" {estado_str} (Soft Delete).',
+            request=request
+        )
         return Response({
             'status': 'success',
             'message': f'Unidad de medida "{unidad.nombre}" {estado_str} exitosamente.',
@@ -171,12 +252,53 @@ class ProductoViewSet(viewsets.ModelViewSet):
 
         return qs
 
+    def perform_create(self, serializer):
+        producto = serializer.save()
+        cod = producto.codigo_barras or "Sin código"
+        registrar_auditoria(
+            usuario=self.request.user,
+            accion="CREAR",
+            tabla_afectada="productos",
+            descripcion=f'Registro de nuevo producto: "{producto.nombre}" (Código: {cod}, Precio: Q{producto.precio_venta:.2f}).',
+            request=self.request
+        )
+
+    def perform_update(self, serializer):
+        producto = serializer.save()
+        cod = producto.codigo_barras or "Sin código"
+        registrar_auditoria(
+            usuario=self.request.user,
+            accion="EDITAR",
+            tabla_afectada="productos",
+            descripcion=f'Actualización del producto: "{producto.nombre}" (Código: {cod}, Stock: {producto.stock_total}).',
+            request=self.request
+        )
+
+    def perform_destroy(self, instance):
+        nombre = instance.nombre
+        cod = instance.codigo_barras or "Sin código"
+        instance.delete()
+        registrar_auditoria(
+            usuario=self.request.user,
+            accion="ELIMINAR",
+            tabla_afectada="productos",
+            descripcion=f'Eliminación del producto: "{nombre}" (Código: {cod}).',
+            request=self.request
+        )
+
     @action(detail=True, methods=['post'], url_path='toggle-status')
     def toggle_status(self, request, pk=None):
         producto = self.get_object()
         producto.is_active = not producto.is_active
         producto.save()
         estado_str = "activado" if producto.is_active else "dado de baja"
+        registrar_auditoria(
+            usuario=request.user,
+            accion="EDITAR" if producto.is_active else "ELIMINAR",
+            tabla_afectada="productos",
+            descripcion=f'Producto "{producto.nombre}" {estado_str} (Soft Delete).',
+            request=request
+        )
         return Response({
             'status': 'success',
             'message': f'Producto "{producto.nombre}" {estado_str} exitosamente.',

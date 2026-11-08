@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
 import { Toast, Pagination, usePagination } from '../../components/common';
-import { IconAlertTriangle, IconBarChart, IconCalendar, IconLayers, IconPrinter, IconRefresh, IconSearch, IconShieldCheck, IconShoppingBag, IconUser } from '../../components/icons/Icons';
+import { IconAlertTriangle, IconBarChart, IconCalendar, IconCheck, IconEdit, IconLayers, IconPlus, IconPrinter, IconRefresh, IconSearch, IconShieldCheck, IconShoppingBag, IconUser } from '../../components/icons/Icons';
 
 export const AuditLogPage = () => {
   const [logs, setLogs] = useState([]);
@@ -78,7 +78,7 @@ export const AuditLogPage = () => {
         </span>
       );
     }
-    if (a.includes('ANULAR')) {
+    if (a.includes('ANULAR') || a.includes('ANULACION')) {
       return (
         <span className="audit-badge audit-badge-anular">
           <IconAlertTriangle size={11} />
@@ -107,6 +107,30 @@ export const AuditLogPage = () => {
         <span className="audit-badge audit-badge-login">
           <IconShieldCheck size={11} />
           <span>ACCESO</span>
+        </span>
+      );
+    }
+    if (a.includes('CREAR')) {
+      return (
+        <span className="audit-badge audit-badge-venta" style={{ color: '#047857', borderColor: 'rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.1)' }}>
+          <IconPlus size={11} />
+          <span>CREAR</span>
+        </span>
+      );
+    }
+    if (a.includes('EDITAR') || a.includes('CAMBIO')) {
+      return (
+        <span className="audit-badge audit-badge-user" style={{ color: '#b45309', borderColor: 'rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.1)' }}>
+          <IconEdit size={11} />
+          <span>EDITAR</span>
+        </span>
+      );
+    }
+    if (a.includes('ELIMINAR')) {
+      return (
+        <span className="audit-badge audit-badge-anular">
+          <IconAlertTriangle size={11} />
+          <span>BAJA</span>
         </span>
       );
     }
@@ -264,13 +288,15 @@ export const AuditLogPage = () => {
             }}
           >
             <option value="TODAS">Todas las Acciones</option>
-            <option value="VENTA">Ventas Realizadas</option>
-            <option value="ANULAR_VENTA">Anulaciones de Venta</option>
-            <option value="COMPRA">Compras / Recepciones</option>
-            <option value="MERMA">Bajas y Mermas de Lotes</option>
             <option value="LOGIN">Inicios de Sesión</option>
-            <option value="USUARIO_CREAR">Creación de Empleados</option>
-            <option value="USUARIO_ESTADO">Estados de Usuario</option>
+            <option value="VENTA">Ventas Realizadas</option>
+            <option value="ANULA">Anulaciones</option>
+            <option value="COMPRA">Compras y Recepciones</option>
+            <option value="CREAR">Registros y Creaciones</option>
+            <option value="EDITAR">Modificaciones y Ediciones</option>
+            <option value="ELIMINAR">Bajas y Eliminaciones</option>
+            <option value="MERMA">Mermas de Inventario</option>
+            <option value="CAJA">Movimientos de Caja</option>
           </select>
 
           <select

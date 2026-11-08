@@ -77,8 +77,8 @@ export const BatchDiscountModal = ({ isOpen, onClose, lote, onSuccess }) => {
         }
       }}
     >
-      <div className="modal-container" style={{ maxWidth: '540px' }}>
-        <div className="modal-header">
+      <div className="modal-container" style={{ maxWidth: '540px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="modal-header" style={{ flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ display: 'flex', alignItems: 'center', color: 'var(--accent)' }}>
               <IconTag size={22} />
@@ -95,8 +95,11 @@ export const BatchDiscountModal = ({ isOpen, onClose, lote, onSuccess }) => {
           </button>
         </div>
 
-        <form onSubmit={(e) => handleSubmit(e)}>
-          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form
+          onSubmit={(e) => handleSubmit(e)}
+          style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}
+        >
+          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
             {errorMsg && <div className="alert alert-danger">{errorMsg}</div>}
 
             <div
@@ -298,7 +301,7 @@ export const BatchDiscountModal = ({ isOpen, onClose, lote, onSuccess }) => {
             )}
           </div>
 
-          <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>
                 Cancelar

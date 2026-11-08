@@ -24,6 +24,7 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed, mobi
     if (setMobileOpen) {
       setMobileOpen(false);
     }
+    setActiveTab('pos');
     logout();
   };
 

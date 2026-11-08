@@ -6,7 +6,9 @@ from django.db.models import Q, F
 from .models import Compra
 from .serializers import CompraSerializer, CompraCreateSerializer
 from apps.inventario.models import LoteInventario
+from apps.catalogos.models import Producto
 from apps.autenticacion.permissions import IsAdminUserRole, IsAdminOrAlmacenero
+from apps.auditoria.services import registrar_auditoria
 
 class CompraViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrAlmacenero]
@@ -24,6 +26,17 @@ class CompraViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return CompraCreateSerializer
         return CompraSerializer
+
+    def perform_create(self, serializer):
+        compra = serializer.save()
+        prov_nombre = compra.proveedor.nombre_empresa if compra.proveedor else "Proveedor General"
+        registrar_auditoria(
+            usuario=self.request.user,
+            accion="COMPRA",
+            tabla_afectada="compras",
+            descripcion=f'Recepción de compra comprobante #{compra.numero_comprobante} de "{prov_nombre}" por Q{compra.total_compra:.2f}.',
+            request=self.request
+        )
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -77,6 +90,14 @@ class CompraViewSet(viewsets.ModelViewSet):
 
         compra.estado = Compra.EstadoCompra.ANULADA
         compra.save(update_fields=['estado'])
+
+        registrar_auditoria(
+            usuario=request.user,
+            accion="ANULAR_COMPRA",
+            tabla_afectada="compras",
+            descripcion=f'Anulación de compra #{compra.numero_comprobante} y reversión de stock.',
+            request=request
+        )
 
         return Response(
             {

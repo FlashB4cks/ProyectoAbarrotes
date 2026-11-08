@@ -35,7 +35,7 @@ class BitacoraAuditoriaViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         if accion and accion != 'TODAS':
-            qs = qs.filter(accion__iexact=accion.strip())
+            qs = qs.filter(accion__icontains=accion.strip())
 
         if tabla:
             qs = qs.filter(tabla_afectada__icontains=tabla.strip())

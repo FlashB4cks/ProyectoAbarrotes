@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
-import { IconLock } from '../../components/icons/Icons';
+import { IconLock, IconCash } from '../../components/icons/Icons';
 
 export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion }) => {
   const [montoReal, setMontoReal] = useState('');
@@ -141,16 +141,30 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
             </div>
 
             <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
                   Efectivo Físico Contado en Gaveta <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <button
                   type="button"
-                  style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                  style={{
+                    background: showDenomCalc ? 'rgba(184, 134, 11, 0.12)' : 'var(--input-bg)',
+                    border: '1px solid var(--accent)',
+                    borderRadius: '6px',
+                    color: 'var(--accent)',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    padding: '4px 10px',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
                   onClick={() => setShowDenomCalc(!showDenomCalc)}
                 >
-                  {showDenomCalc ? 'Ocultar Desglose de Billetes' : 'Abrir Calculadora de Billetes'}
+                  <IconCash size={14} />
+                  <span>{showDenomCalc ? 'Ocultar Desglose' : 'Desglose de Billetes'}</span>
                 </button>
               </div>
 
@@ -172,34 +186,115 @@ export const CloseCashModal = ({ isOpen, onClose, onSuccess, metricas, sesion })
             </div>
 
             {showDenomCalc && (
-              <div style={{ background: 'var(--input-bg)', padding: '12px', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)', display: 'block', marginBottom: '8px' }}>
-                  Conteo por Denominación (Guatemala)
-                </span>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+              <div
+                style={{
+                  background: 'var(--input-bg)',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--card-border)',
+                  boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.03)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                    Conteo por Denominación (Guatemala)
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {contadoNum > 0 && (
+                      <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#16a34a', background: 'rgba(22, 163, 74, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
+                        Total: Q {contadoNum.toFixed(2)}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDenominaciones({ b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, b5: 0, m1: 0, m05: 0 });
+                        setMontoReal('0.00');
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        padding: '2px 4px',
+                        textDecoration: 'underline'
+                      }}
+                      title="Reiniciar conteo"
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                    gap: '8px'
+                  }}
+                >
                   {[
-                    { key: 'b200', label: 'Q200', val: 200 },
-                    { key: 'b100', label: 'Q100', val: 100 },
-                    { key: 'b50', label: 'Q50', val: 50 },
-                    { key: 'b20', label: 'Q20', val: 20 },
-                    { key: 'b10', label: 'Q10', val: 10 },
-                    { key: 'b5', label: 'Q5', val: 5 },
-                    { key: 'm1', label: 'Q1', val: 1 },
-                    { key: 'm05', label: 'Q0.50', val: 0.5 },
-                  ].map(d => (
-                    <div key={d.key}>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{d.label}</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={denominaciones[d.key] || ''}
-                        onChange={(e) => updateDenom(d.key, e.target.value)}
-                        placeholder="0"
-                        className="form-control"
-                        style={{ padding: '4px 6px', fontSize: '12px', textAlign: 'center' }}
-                      />
-                    </div>
-                  ))}
+                    { key: 'b200', label: 'Q 200', val: 200 },
+                    { key: 'b100', label: 'Q 100', val: 100 },
+                    { key: 'b50', label: 'Q 50', val: 50 },
+                    { key: 'b20', label: 'Q 20', val: 20 },
+                    { key: 'b10', label: 'Q 10', val: 10 },
+                    { key: 'b5', label: 'Q 5', val: 5 },
+                    { key: 'm1', label: 'Q 1', val: 1 },
+                    { key: 'm05', label: 'Q 0.50', val: 0.5 },
+                  ].map(d => {
+                    const cant = denominaciones[d.key] || 0;
+                    const subtotal = cant * d.val;
+                    return (
+                      <div
+                        key={d.key}
+                        style={{
+                          background: cant > 0 ? '#ffffff' : '#faf9f6',
+                          border: `1.5px solid ${cant > 0 ? 'var(--accent)' : 'var(--card-border)'}`,
+                          borderRadius: '8px',
+                          padding: '6px 8px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                          minWidth: 0,
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', minWidth: 0 }}>
+                          <span style={{ fontSize: '11.5px', fontWeight: 800, color: cant > 0 ? 'var(--accent)' : 'var(--text-main)', whiteSpace: 'nowrap' }}>
+                            {d.label}
+                          </span>
+                          {cant > 0 && (
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#16a34a', whiteSpace: 'nowrap' }}>
+                              Q{subtotal >= 100 ? subtotal.toFixed(0) : subtotal.toFixed(subtotal % 1 === 0 ? 0 : 2)}
+                            </span>
+                          )}
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          value={denominaciones[d.key] || ''}
+                          onChange={(e) => updateDenom(d.key, e.target.value)}
+                          placeholder="0"
+                          style={{
+                            width: '100%',
+                            minWidth: 0,
+                            boxSizing: 'border-box',
+                            padding: '4px 6px',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            textAlign: 'center',
+                            borderRadius: '5px',
+                            border: `1px solid ${cant > 0 ? 'var(--accent)' : 'var(--card-border)'}`,
+                            background: cant > 0 ? 'rgba(184, 134, 11, 0.06)' : '#ffffff',
+                            color: 'var(--text-main)',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

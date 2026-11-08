@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NohemyApi, STORAGE_KEYS } from '../../api/nohemyApi';
 import { useAuth } from '../../context/AuthContext';
 import { playScannerBeep } from '../../utils/audio';
@@ -29,6 +29,46 @@ export const MainLayout = () => {
     } catch {}
     return 'pos';
   });
+
+  const currentUserIdRef = useRef(user?.id);
+
+  // Redirigir a la pestaña correspondiente según el rol del usuario conectado
+  useEffect(() => {
+    if (user) {
+      const isAlmacenero = user?.rol === 'ALMACENERO' || user?.rol === 'BODEGUERO';
+      const targetDefaultTab = isAlmacenero ? 'productos' : 'pos';
+
+      // Si cambió de usuario (ej. cierre de sesión e inicio con otro)
+      if (user.id !== currentUserIdRef.current) {
+        currentUserIdRef.current = user.id;
+        setActiveTab(targetDefaultTab);
+        return;
+      }
+
+      // Validar si la pestaña activa actual está autorizada para el rol
+      const isAdmin = user?.rol === 'ADMINISTRADOR' || user?.is_superuser;
+      const isVendedor = user?.rol === 'VENDEDOR' || (!isAdmin && !isAlmacenero);
+
+      const canAccessVentas = isAdmin || isVendedor;
+      const canAccessAbastecimiento = isAdmin || isAlmacenero;
+      const canAccessAdmin = isAdmin;
+
+      let isAllowed = true;
+      if (['pos', 'caja', 'clientes'].includes(activeTab) && !canAccessVentas) {
+        isAllowed = false;
+      } else if (['compras', 'proveedores', 'inventario'].includes(activeTab) && !canAccessAbastecimiento) {
+        isAllowed = false;
+      } else if (['reportes', 'auditoria', 'usuarios'].includes(activeTab) && !canAccessAdmin) {
+        isAllowed = false;
+      }
+
+      if (!isAllowed) {
+        setActiveTab(targetDefaultTab);
+      }
+    } else {
+      currentUserIdRef.current = null;
+    }
+  }, [user, activeTab]);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
