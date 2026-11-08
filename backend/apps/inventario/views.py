@@ -14,7 +14,7 @@ from .models import LoteInventario, AjusteInventario
 from .serializers import LoteInventarioSerializer, AjusteInventarioSerializer
 from apps.catalogos.models import Producto
 from apps.auditoria.services import registrar_auditoria
-from apps.autenticacion.permissions import IsAdminUserRole
+from apps.autenticacion.permissions import IsAdminUserRole, IsAdminOrAlmacenero
 
 _SCANNER_SESSIONS = {}
 
@@ -230,7 +230,7 @@ class LoteInventarioViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_permissions(self):
         if self.action in ['registrar_merma', 'aplicar_descuento']:
-            return [IsAdminUserRole()]
+            return [IsAdminOrAlmacenero()]
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):

@@ -21,7 +21,14 @@ import ScannerModal from '../../pages/scanner/ScannerModal';
 
 export const MainLayout = () => {
   const { user, loading, updateUserState } = useAuth();
-  const [activeTab, setActiveTab] = useState('pos');
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const savedUser = sessionStorage.getItem(STORAGE_KEYS.USER_DATA);
+      const u = savedUser ? JSON.parse(savedUser) : null;
+      if (u?.rol === 'ALMACENERO' || u?.rol === 'BODEGUERO') return 'productos';
+    } catch {}
+    return 'pos';
+  });
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -169,6 +176,14 @@ export const MainLayout = () => {
 
   const forcePasswordChange = Boolean(user?.debe_cambiar_password);
 
+  const isAdmin = user?.rol === 'ADMINISTRADOR' || user?.is_superuser;
+  const isAlmacenero = user?.rol === 'ALMACENERO' || user?.rol === 'BODEGUERO';
+  const isVendedor = user?.rol === 'VENDEDOR' || (!isAdmin && !isAlmacenero);
+
+  const canAccessVentas = isAdmin || isVendedor;
+  const canAccessAbastecimiento = isAdmin || isAlmacenero;
+  const canAccessAdmin = isAdmin;
+
   return (
     <div className="app-container">
       <Sidebar
@@ -187,50 +202,56 @@ export const MainLayout = () => {
           onToggleMobileMenu={() => setMobileMenuOpen(prev => !prev)}
         />
         {activeTab === 'pos' && (
-          <POSPage onOpenScanner={() => setIsScannerModalOpen(true)} />
+          canAccessVentas
+            ? <POSPage onOpenScanner={() => setIsScannerModalOpen(true)} />
+            : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Vendedores y Administración.</div>
         )}
         {activeTab === 'caja' && (
-          <CashControlPage onOpenScanner={() => setIsScannerModalOpen(true)} />
+          canAccessVentas
+            ? <CashControlPage onOpenScanner={() => setIsScannerModalOpen(true)} />
+            : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Vendedores y Administración.</div>
         )}
         {activeTab === 'productos' && (
           <ProductsPage onOpenScanner={() => setIsScannerModalOpen(true)} />
         )}
         {activeTab === 'clientes' && (
-          <ModuleErrorBoundary name="Gestión de Clientes">
-            <ClientsPage />
-          </ModuleErrorBoundary>
+          canAccessVentas ? (
+            <ModuleErrorBoundary name="Gestión de Clientes">
+              <ClientsPage />
+            </ModuleErrorBoundary>
+          ) : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Vendedores y Administración.</div>
         )}
         {activeTab === 'compras' && (
-          (user?.rol === 'ADMINISTRADOR' || user?.rol === 'BODEGUERO' || user?.is_superuser)
+          canAccessAbastecimiento
             ? <PurchasesPage />
-            : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores y Bodega.</div>
+            : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores y Almacén.</div>
         )}
         {activeTab === 'proveedores' && (
-          (user?.rol === 'ADMINISTRADOR' || user?.rol === 'BODEGUERO' || user?.is_superuser)
+          canAccessAbastecimiento
             ? <SuppliersPage />
-            : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores y Bodega.</div>
+            : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores y Almacén.</div>
         )}
         {activeTab === 'inventario' && (
-          (user?.rol === 'ADMINISTRADOR' || user?.rol === 'BODEGUERO' || user?.is_superuser)
+          canAccessAbastecimiento
             ? <InventoryBatchesPage onNavigateToPurchases={() => setActiveTab('compras')} />
-            : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores y Bodega.</div>
+            : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores y Almacén.</div>
         )}
         {activeTab === 'reportes' && (
-          (user?.rol === 'ADMINISTRADOR' || user?.is_superuser) ? (
+          canAccessAdmin ? (
             <ModuleErrorBoundary name="Reportes y Analíticas">
               <ReportsAnalyticsPage />
             </ModuleErrorBoundary>
           ) : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores.</div>
         )}
         {activeTab === 'auditoria' && (
-          (user?.rol === 'ADMINISTRADOR' || user?.is_superuser) ? (
+          canAccessAdmin ? (
             <ModuleErrorBoundary name="Bitácora de Auditoría">
               <AuditLogPage />
             </ModuleErrorBoundary>
           ) : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores.</div>
         )}
         {activeTab === 'usuarios' && (
-          (user?.rol === 'ADMINISTRADOR' || user?.is_superuser)
+          canAccessAdmin
             ? <UsersPage />
             : <div className="card p-4 m-4 text-center text-muted">Acceso restringido a Administradores.</div>
         )}

@@ -6,7 +6,12 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed, mobi
   const { logout, user } = useAuth();
 
   const isAdmin = user?.rol === 'ADMINISTRADOR' || user?.is_superuser;
-  const isBodegueroOrAdmin = isAdmin || user?.rol === 'BODEGUERO';
+  const isAlmacenero = user?.rol === 'ALMACENERO' || user?.rol === 'BODEGUERO';
+  const isVendedor = user?.rol === 'VENDEDOR' || (!isAdmin && !isAlmacenero);
+
+  const canAccessVentas = isAdmin || isVendedor;
+  const canAccessAbastecimiento = isAdmin || isAlmacenero;
+  const canAccessAdmin = isAdmin;
 
   const handleNavClick = (tab) => {
     setActiveTab(tab);
@@ -68,63 +73,89 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed, mobi
 
         <nav className="sidebar-nav">
           <div className="nav-group">
-            <span className="nav-section-title">VENTAS Y CAJA</span>
-
-            <button
-              className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`}
-              onClick={() => handleNavClick('pos')}
-              title="Punto de Venta"
-            >
-              <span className="nav-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="9" cy="21" r="1"></circle>
-                  <circle cx="20" cy="21" r="1"></circle>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                </svg>
-              </span>
-              <span className="nav-text">Punto de Venta</span>
-            </button>
-
-            <button
-              className={`nav-item ${activeTab === 'caja' ? 'active' : ''}`}
-              onClick={() => handleNavClick('caja')}
-              title="Control de Caja"
-            >
-              <span className="nav-icon">
-                <IconCashRegister size={20} />
-              </span>
-              <span className="nav-text">Control de Caja</span>
-            </button>
-
-            <button
-              className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`}
-              onClick={() => handleNavClick('productos')}
-              title="Gestión de Productos"
-            >
-              <span className="nav-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                </svg>
-              </span>
-              <span className="nav-text">Catálogo Productos</span>
-            </button>
-
-            <button
-              className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`}
-              onClick={() => handleNavClick('clientes')}
-              title="Gestión de Clientes"
-            >
-              <span className="nav-icon">
-                <IconUser size={20} />
-              </span>
-              <span className="nav-text">Gestión de Clientes</span>
-            </button>
-
-            {isBodegueroOrAdmin && (
+            {canAccessVentas && (
               <>
-                <span className="nav-section-title" style={{ marginTop: '12px' }}>ABASTECIMIENTO</span>
+                <span className="nav-section-title">VENTAS Y CAJA</span>
+
+                <button
+                  className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`}
+                  onClick={() => handleNavClick('pos')}
+                  title="Punto de Venta"
+                >
+                  <span className="nav-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="21" r="1"></circle>
+                      <circle cx="20" cy="21" r="1"></circle>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                  </span>
+                  <span className="nav-text">Punto de Venta</span>
+                </button>
+
+                <button
+                  className={`nav-item ${activeTab === 'caja' ? 'active' : ''}`}
+                  onClick={() => handleNavClick('caja')}
+                  title="Control de Caja"
+                >
+                  <span className="nav-icon">
+                    <IconCashRegister size={20} />
+                  </span>
+                  <span className="nav-text">Control de Caja</span>
+                </button>
+
+                {isVendedor && (
+                  <button
+                    className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`}
+                    onClick={() => handleNavClick('productos')}
+                    title="Catálogo de Productos"
+                  >
+                    <span className="nav-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                      </svg>
+                    </span>
+                    <span className="nav-text">Catálogo Productos</span>
+                  </button>
+                )}
+
+                <button
+                  className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`}
+                  onClick={() => handleNavClick('clientes')}
+                  title="Gestión de Clientes"
+                >
+                  <span className="nav-icon">
+                    <IconUser size={20} />
+                  </span>
+                  <span className="nav-text">Gestión de Clientes</span>
+                </button>
+              </>
+            )}
+
+            {canAccessAbastecimiento && (
+              <>
+                <span className="nav-section-title" style={{ marginTop: canAccessVentas ? '12px' : '0px' }}>
+                  ABASTECIMIENTO E INVENTARIO
+                </span>
+
+                {!isVendedor && (
+                  <button
+                    className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`}
+                    onClick={() => handleNavClick('productos')}
+                    title="Catálogo y Gestión de Productos"
+                  >
+                    <span className="nav-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                      </svg>
+                    </span>
+                    <span className="nav-text">Catálogo Productos</span>
+                  </button>
+                )}
+
                 <button
                   className={`nav-item ${activeTab === 'compras' ? 'active' : ''}`}
                   onClick={() => handleNavClick('compras')}
@@ -168,9 +199,10 @@ export const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed, mobi
               </>
             )}
 
-            {isAdmin && (
+            {canAccessAdmin && (
               <>
                 <span className="nav-section-title" style={{ marginTop: '12px' }}>ADMINISTRACIÓN</span>
+
                 <button
                   className={`nav-item ${activeTab === 'reportes' ? 'active' : ''}`}
                   onClick={() => handleNavClick('reportes')}

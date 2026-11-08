@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NohemyApi } from '../../api/nohemyApi';
+import { useAuth } from '../../context/AuthContext';
 import { Toast, ConfirmModal, Pagination, usePagination } from '../../components/common';
 
 import ProductModal from './ProductModal';
@@ -8,6 +9,9 @@ import UnidadModal from './UnidadModal';
 import CategoriaModal from './CategoriaModal';
 
 export const ProductsPage = ({ onOpenScanner }) => {
+  const { user } = useAuth();
+  const canManageCatalog = user?.rol === 'ADMINISTRADOR' || user?.rol === 'ALMACENERO' || user?.rol === 'BODEGUERO' || user?.is_superuser;
+
   const [activeSubTab, setActiveSubTab] = useState('productos');
   const [products, setProducts] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -344,32 +348,34 @@ export const ProductsPage = ({ onOpenScanner }) => {
   return (
     <div className="view-panel">
 
-      <div className="tab-pill-group">
-        <button
-          className={`tab-pill ${activeSubTab === 'productos' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('productos')}
-        >
-          Catálogo de Productos ({products.length})
-        </button>
-        <button
-          className={`tab-pill ${activeSubTab === 'categorias' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('categorias')}
-        >
-          Gestión de Categorías ({categorias.length})
-        </button>
-        <button
-          className={`tab-pill ${activeSubTab === 'marcas' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('marcas')}
-        >
-          Gestión de Marcas ({marcas.length})
-        </button>
-        <button
-          className={`tab-pill ${activeSubTab === 'unidades' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('unidades')}
-        >
-          Catálogo de Unidades ({unidades.length})
-        </button>
-      </div>
+      {canManageCatalog && (
+        <div className="tab-pill-group">
+          <button
+            className={`tab-pill ${activeSubTab === 'productos' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('productos')}
+          >
+            Catálogo de Productos ({products.length})
+          </button>
+          <button
+            className={`tab-pill ${activeSubTab === 'categorias' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('categorias')}
+          >
+            Gestión de Categorías ({categorias.length})
+          </button>
+          <button
+            className={`tab-pill ${activeSubTab === 'marcas' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('marcas')}
+          >
+            Gestión de Marcas ({marcas.length})
+          </button>
+          <button
+            className={`tab-pill ${activeSubTab === 'unidades' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('unidades')}
+          >
+            Catálogo de Unidades ({unidades.length})
+          </button>
+        </div>
+      )}
 
       {activeSubTab === 'productos' && (
         <div className="card">
@@ -423,9 +429,11 @@ export const ProductsPage = ({ onOpenScanner }) => {
               </select>
             </div>
 
-            <button className="btn btn-primary" onClick={handleNewProduct}>
-              Nuevo Producto
-            </button>
+            {canManageCatalog && (
+              <button className="btn btn-primary" onClick={handleNewProduct}>
+                Nuevo Producto
+              </button>
+            )}
           </div>
 
           <div className="table-responsive">
@@ -438,7 +446,7 @@ export const ProductsPage = ({ onOpenScanner }) => {
                   <th style={{ width: '11%' }}>Precio Venta</th>
                   <th style={{ width: '10%' }}>Stock Actual</th>
                   <th style={{ width: '11%' }}>Estado Stock</th>
-                  <th className="text-right" style={{ width: '12%' }}>Acciones</th>
+                  <th className="text-right" style={{ width: '12%' }}>{canManageCatalog ? 'Acciones' : 'Info'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -491,15 +499,19 @@ export const ProductsPage = ({ onOpenScanner }) => {
                           )}
                         </td>
                         <td>
-                          <div className="actions-cell">
-                            <button className="btn-icon-btn btn-edit" onClick={() => handleEditProduct(p)}>Editar</button>
-                            <button
-                              className={`btn-icon-btn ${p.is_active ? 'btn-danger-solid' : 'btn-success-solid'}`}
-                              onClick={() => setConfirmProduct(p)}
-                            >
-                              {p.is_active ? 'Dar de Baja' : 'Reactivar'}
-                            </button>
-                          </div>
+                          {canManageCatalog ? (
+                            <div className="actions-cell">
+                              <button className="btn-icon-btn btn-edit" onClick={() => handleEditProduct(p)}>Editar</button>
+                              <button
+                                className={`btn-icon-btn ${p.is_active ? 'btn-danger-solid' : 'btn-success-solid'}`}
+                                onClick={() => setConfirmProduct(p)}
+                              >
+                                {p.is_active ? 'Dar de Baja' : 'Reactivar'}
+                              </button>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Solo Consulta</span>
+                          )}
                         </td>
                       </tr>
                     );

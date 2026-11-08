@@ -6,10 +6,10 @@ from django.db.models import Q, F
 from .models import Compra
 from .serializers import CompraSerializer, CompraCreateSerializer
 from apps.inventario.models import LoteInventario
-from apps.autenticacion.permissions import IsAdminUserRole
+from apps.autenticacion.permissions import IsAdminUserRole, IsAdminOrAlmacenero
 
 class CompraViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminOrAlmacenero]
     queryset = Compra.objects.select_related('proveedor', 'usuario_registra')\
                              .prefetch_related('detalles__producto__unidad_medida')\
                              .all()\
@@ -18,7 +18,7 @@ class CompraViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['anular_compra', 'destroy', 'update', 'partial_update']:
             return [IsAdminUserRole()]
-        return [permissions.IsAuthenticated()]
+        return [IsAdminOrAlmacenero()]
 
     def get_serializer_class(self):
         if self.action == 'create':

@@ -12,12 +12,12 @@ from .serializers import (
     MarcaSerializer
 )
 from apps.auditoria.services import registrar_auditoria
-from apps.autenticacion.permissions import IsAdminOrReadOnly
+from apps.autenticacion.permissions import IsAdminOrAlmaceneroOrReadOnly
 
 class MarcaViewSet(viewsets.ModelViewSet):
     queryset = Marca.objects.all().order_by('-is_active', 'nombre')
     serializer_class = MarcaSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrAlmaceneroOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -41,7 +41,7 @@ class MarcaViewSet(viewsets.ModelViewSet):
 class CategoriaViewSet(viewsets.ModelViewSet):
     queryset = Categoria.objects.all().order_by('-is_active', 'nombre')
     serializer_class = CategoriaSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrAlmaceneroOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -65,7 +65,7 @@ class CategoriaViewSet(viewsets.ModelViewSet):
 class UnidadMedidaViewSet(viewsets.ModelViewSet):
     queryset = UnidadMedida.objects.all().order_by('-is_active', 'nombre')
     serializer_class = UnidadMedidaSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrAlmaceneroOrReadOnly]
 
     @action(detail=True, methods=['post'], url_path='toggle-status')
     def toggle_status(self, request, pk=None):
@@ -82,7 +82,7 @@ class UnidadMedidaViewSet(viewsets.ModelViewSet):
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all().order_by('-is_active', 'nombre_empresa')
     serializer_class = ProveedorSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrAlmaceneroOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -138,7 +138,7 @@ class ProveedorViewSet(viewsets.ModelViewSet):
 class ProductoViewSet(viewsets.ModelViewSet):
     queryset = Producto.objects.select_related('categoria', 'marca', 'unidad_medida', 'proveedor').all().order_by('-is_active', 'nombre')
     serializer_class = ProductoSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrAlmaceneroOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
