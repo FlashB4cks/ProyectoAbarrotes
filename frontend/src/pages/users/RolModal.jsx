@@ -16,7 +16,9 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
         codigo: editingRol.codigo || '',
         nombre: editingRol.nombre || '',
         descripcion: editingRol.descripcion || '',
-        permisos: editingRol.permisos || ''
+        permisos: Array.isArray(editingRol.permisos)
+          ? editingRol.permisos.join(', ')
+          : (editingRol.permisos || '')
       });
     } else {
       setFormData({ codigo: '', nombre: '', descripcion: '', permisos: '' });
@@ -45,11 +47,17 @@ export const RolModal = ({ isOpen, onClose, onSave, editingRol }) => {
     if (!validate()) return;
     try {
       setSubmitting(true);
+      const rawPermisos = Array.isArray(formData.permisos)
+        ? formData.permisos
+        : (typeof formData.permisos === 'string'
+            ? formData.permisos.split(',').map(p => p.trim()).filter(Boolean)
+            : []);
+
       await onSave({
         codigo: formData.codigo.trim().toUpperCase(),
         nombre: formData.nombre.trim(),
-        descripcion: formData.descripcion.trim(),
-        permisos: formData.permisos.trim()
+        descripcion: (formData.descripcion || '').trim(),
+        permisos: rawPermisos
       });
       onClose();
     } catch (err) {

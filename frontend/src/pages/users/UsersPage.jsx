@@ -189,7 +189,7 @@ export const UsersPage = () => {
         (r.codigo && r.codigo.toLowerCase().includes(term)) ||
         (r.nombre && r.nombre.toLowerCase().includes(term)) ||
         (r.descripcion && r.descripcion.toLowerCase().includes(term)) ||
-        (r.permisos && r.permisos.toLowerCase().includes(term))
+        (r.permisos && (Array.isArray(r.permisos) ? r.permisos.join(' ') : String(r.permisos)).toLowerCase().includes(term))
       );
     }
     return result.sort((a, b) => {
@@ -318,7 +318,9 @@ export const UsersPage = () => {
                         <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{r.descripcion || '—'}</span>
                       </td>
                       <td>
-                        <span style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>{r.permisos || 'Estándar'}</span>
+                        <span style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>
+                          {Array.isArray(r.permisos) ? (r.permisos.join(', ') || 'Estándar') : (r.permisos || 'Estándar')}
+                        </span>
                       </td>
                       <td>
                         <strong style={{ color: 'var(--accent)', fontSize: '14px' }}>
